@@ -1,0 +1,25 @@
+name: SafeZone
+main: com.simpleforapanda.safezone.paper.SafeZonePaperPlugin
+version: ${version}
+api-version: '1.21'
+authors:
+  - SimpleForAPanda
+description: Server-side land-claim protection for Paper 1.21.11 with claim tools, protections, and trust controls.
+commands:
+  claim:
+    description: Safe Zone Paper player claim command
+    permission: safezone.command.claim
+    aliases: [claims]
+    usage: /claim [help|status|here|info|list|trusted|trust|remove]
+  sz:
+    description: Safe Zone Paper admin command
+    permission: safezone.command.admin
+    aliases: [safezone]
+    usage: /sz [help|status|list|info|here|inspect|notifications|givewand|limits|transfer|trust|untrust|remove|delete|removeall|reload]
+permissions:
+  safezone.command.claim:
+    description: Use Safe Zone player commands
+    default: true
+  safezone.command.admin:
+    description: Use Safe Zone admin commands
+    default: op

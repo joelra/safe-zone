@@ -39,5 +39,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: safe-zone-build-${{ github.run_number }}
-          path: build/libs/*.jar
+          path: |
+            fabric/build/libs/*.jar
+            !fabric/build/libs/*-dev.jar
+            !fabric/build/libs/*-sources.jar
+            paper/build/libs/*.jar
+            !paper/build/libs/*-sources.jar
           if-no-files-found: error

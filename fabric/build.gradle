@@ -1,0 +1,91 @@
+plugins {
+	id 'net.fabricmc.fabric-loom-remap'
+	id 'maven-publish'
+}
+
+loom {
+	mods {
+		"safe-zone" {
+			sourceSet("main", ":common")
+			sourceSet sourceSets.main
+		}
+	}
+
+	runConfigs.configureEach {
+		runDir = project.relativePath(rootProject.file('run/fabric'))
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	implementation project(':common')
+
+	testImplementation platform('org.junit:junit-bom:5.12.2')
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+fabricApi {
+	configureDataGeneration()
+}
+
+processResources {
+	inputs.property 'version', project.version
+
+	filesMatching('fabric.mod.json') {
+		expand 'version': inputs.properties.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.release = 21
+	options.compilerArgs += ['-Xlint:deprecation']
+}
+
+test {
+	useJUnitPlatform()
+}
+
+java {
+	withSourcesJar()
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
+}
+
+base {
+	archivesName = rootProject.name
+}
+
+jar {
+	from(project(':common').sourceSets.main.output)
+	from(rootProject.file('LICENSE')) {
+		rename { "${it}_${rootProject.name}" }
+	}
+}
+
+sourcesJar {
+	from(project(':common').sourceSets.main.allSource)
+}
+
+def commonMainOutput = project(':common').sourceSets.main.output
+def commonRuntimeEntries = files({
+	commonMainOutput.files.findAll { it.exists() }
+})
+def commonJarName = "${rootProject.name}-common-${project.version}.jar"
+['runClient', 'runServer', 'runDatagen'].each { runTaskName ->
+	tasks.named(runTaskName).configure {
+		classpath = commonRuntimeEntries + classpath.filter { it.name != commonJarName }
+	}
+}
+
+publishing {
+	publications {
+		create('mavenJava', MavenPublication) {
+			from components.java
+		}
+	}
+}
