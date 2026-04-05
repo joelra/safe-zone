@@ -1,11 +1,10 @@
 # Safe Zone
 
-![Minecraft 1.21.11](https://img.shields.io/badge/Minecraft-1.21.11-3C8527?style=flat-square)
-![Fabric](https://img.shields.io/badge/Platform-Fabric-db202c?style=flat-square)
-![Paper](https://img.shields.io/badge/Platform-Paper-1f6feb?style=flat-square)
-![Server Side](https://img.shields.io/badge/Side-Server%20Side-4051b5?style=flat-square)
-![Clients](https://img.shields.io/badge/Clients-Unmodded%20Supported-2d7d46?style=flat-square)
-![License MIT](https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square)
+[![CI](https://github.com/joelra/safe-zone/actions/workflows/build.yml/badge.svg)](https://github.com/joelra/safe-zone/actions/workflows/build.yml)
+[![Latest release](https://img.shields.io/github/v/release/joelra/safe-zone?style=flat-square)](https://github.com/joelra/safe-zone/releases)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11-3C8527?style=flat-square)](https://www.minecraft.net/)
+[![Platforms](https://img.shields.io/badge/Platforms-Fabric%20%7C%20Paper-5865F2?style=flat-square)](#compatibility)
+[![License](https://img.shields.io/github/license/joelra/safe-zone?style=flat-square)](LICENSE)
 
 Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 1.21.11**. It supports **Fabric** and **Paper**, keeps the core experience usable for **unmodded clients**, and uses a configurable **vanilla item claim wand** instead of custom client content.
 
