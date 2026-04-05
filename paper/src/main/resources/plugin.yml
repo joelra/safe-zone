@@ -5,6 +5,10 @@ api-version: '1.21'
 authors:
   - SimpleForAPanda
 description: Server-side land-claim protection for Paper 1.21.11 with claim tools, protections, and trust controls.
+softdepend:
+  - AxiomPaper
+  - FastAsyncWorldEdit
+  - WorldEdit
 commands:
   claim:
     description: Safe Zone Paper player claim command
@@ -22,4 +26,11 @@ permissions:
     default: true
   safezone.command.admin:
     description: Use Safe Zone admin commands
+    default: op
+  safezone.axiom:
+    description: >
+      Allow the player to connect with the Axiom editor and use it inside
+      claims they own or are trusted in. Requires AxiomPaperPlugin to be
+      installed. Players also need the standard Axiom permission (axiom.default)
+      granted by their permission plugin.
     default: op

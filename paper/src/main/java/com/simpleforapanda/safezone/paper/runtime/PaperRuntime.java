@@ -1,6 +1,8 @@
 package com.simpleforapanda.safezone.paper.runtime;
 
 import com.simpleforapanda.safezone.data.SafeZoneConfig;
+import com.simpleforapanda.safezone.paper.integration.axiom.AxiomIntegration;
+import com.simpleforapanda.safezone.paper.integration.fawe.FaweIntegration;
 import com.simpleforapanda.safezone.paper.listener.PaperAdminInspectService;
 import com.simpleforapanda.safezone.paper.listener.PaperClaimVisualizationService;
 import com.simpleforapanda.safezone.paper.listener.PaperClaimWandListener;
@@ -10,6 +12,7 @@ import com.simpleforapanda.safezone.paper.listener.PaperProtectionListener;
 import com.simpleforapanda.safezone.paper.listener.PaperStarterKitListener;
 import com.simpleforapanda.safezone.paper.protection.PaperRideableEntityClassifier;
 import com.simpleforapanda.safezone.paper.ui.PaperTrustMenuService;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class PaperRuntime {
@@ -18,6 +21,7 @@ public final class PaperRuntime {
 	private final PaperCommandRegistrar commandRegistrar;
 	private final PaperClaimVisualizationService claimVisualizationService;
 	private final PaperClaimWandListener claimWandListener;
+	private FaweIntegration faweIntegration;
 
 	private PaperRuntime(PaperPluginContext context) {
 		this.context = context;
@@ -60,6 +64,16 @@ public final class PaperRuntime {
 		this.context.plugin().getServer().getPluginManager().registerEvents(new PaperEntityProtectionListener(this), this.context.plugin());
 		this.context.plugin().getServer().getPluginManager().registerEvents(this.services.trustMenuService(), this.context.plugin());
 		this.claimVisualizationService.start();
+		if (AxiomIntegration.isPresent()) {
+			AxiomIntegration.register(this.context.plugin(), this.services.claimStore());
+		}
+		// Check for WorldEdit/FAWE with pure Bukkit before loading FaweIntegration.
+		// FaweIntegration has WorldEdit types in method signatures; loading it before
+		// confirming the dependency is present risks a NoClassDefFoundError.
+		if (Bukkit.getPluginManager().isPluginEnabled("FastAsyncWorldEdit")
+				|| Bukkit.getPluginManager().isPluginEnabled("WorldEdit")) {
+			this.faweIntegration = FaweIntegration.register(this.context.plugin(), this.services.claimStore());
+		}
 		this.context.logger().info("Safe Zone Paper runtime enabled at " + this.context.paths().pluginDirectory());
 	}
 
@@ -67,6 +81,7 @@ public final class PaperRuntime {
 		SafeZoneConfig config = this.services.configService().current();
 		this.services.adminInspectService().clear();
 		this.claimVisualizationService.stop();
+		FaweIntegration.unregister(this.faweIntegration);
 		this.services.claimStore().save();
 		this.services.notificationStore().save(config);
 		this.services.configService().save();
