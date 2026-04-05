@@ -32,10 +32,11 @@ import java.util.List;
 final class SafeZoneFaweExtent extends AbstractDelegateExtent {
 
     private static final String ADMIN_PERMISSION = "safezone.command.admin";
+    private static final int[] EMPTY_BOUNDS = new int[0];
 
     /**
      * {@code true} when all block changes should pass through without checks.
-     * Set when the player has admin bypass or the edited world has no claims.
+     * Set only when the player has the admin bypass permission.
      */
     private final boolean unrestricted;
 
@@ -47,9 +48,15 @@ final class SafeZoneFaweExtent extends AbstractDelegateExtent {
 
     SafeZoneFaweExtent(Extent delegate, Player player, World editedWorld, PaperClaimStore claimStore) {
         super(delegate);
-        if (player.hasPermission(ADMIN_PERMISSION) || !claimStore.isClaimWorld(editedWorld)) {
+        if (player.hasPermission(ADMIN_PERMISSION)) {
             this.unrestricted = true;
-            this.claimBounds = new int[0];
+            this.claimBounds = EMPTY_BOUNDS;
+        } else if (!claimStore.isClaimWorld(editedWorld)) {
+            // Not the claim world: no claims exist here, so deny all edits
+            // to stay consistent with the Axiom integration which also returns
+            // NONE_ALLOWED for non-claim worlds.
+            this.unrestricted = false;
+            this.claimBounds = EMPTY_BOUNDS;
         } else {
             this.unrestricted = false;
             List<ClaimData> accessible = new ArrayList<>(claimStore.getClaimsForOwner(player.getUniqueId()));

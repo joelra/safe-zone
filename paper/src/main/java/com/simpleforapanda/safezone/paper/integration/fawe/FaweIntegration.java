@@ -21,8 +21,10 @@ import org.bukkit.plugin.Plugin;
  * Axiom integration. Admin players ({@code safezone.command.admin}) bypass
  * restrictions.
  *
- * <p>This class is only referenced after a runtime check confirms that
- * FastAsyncWorldEdit or WorldEdit is loaded on the server.
+ * <p>This class must only be loaded after a Bukkit-level check confirms that
+ * FastAsyncWorldEdit or WorldEdit is enabled. Referencing this class before
+ * the dependency is present may cause a {@link NoClassDefFoundError} because
+ * the class body references WorldEdit types in method signatures.
  */
 public final class FaweIntegration {
 
@@ -33,16 +35,9 @@ public final class FaweIntegration {
     }
 
     /**
-     * Returns {@code true} if FAWE or WorldEdit is currently loaded.
-     */
-    public static boolean isPresent() {
-        return Bukkit.getPluginManager().isPluginEnabled("FastAsyncWorldEdit")
-            || Bukkit.getPluginManager().isPluginEnabled("WorldEdit");
-    }
-
-    /**
      * Register the extent injector with WorldEdit's event bus.
-     * Only call after {@link #isPresent()} returns {@code true}.
+     * Only call after confirming WorldEdit or FastAsyncWorldEdit is enabled
+     * via a Bukkit-level plugin check.
      *
      * @return the registered integration instance, which should be retained and
      *     passed to {@link #unregister(FaweIntegration)} during plugin shutdown
