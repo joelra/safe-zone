@@ -75,7 +75,7 @@ final class SafeZoneFaweExtent extends AbstractDelegateExtent {
 
     @Override
     public <T extends BlockStateHolder<T>> boolean setBlock(BlockVector3 location, T block) throws WorldEditException {
-        if (this.unrestricted || isAllowed(location.getBlockX(), location.getBlockZ())) {
+        if (this.unrestricted || isAllowed(location.x(), location.z())) {
             return super.setBlock(location, block);
         }
         return false;

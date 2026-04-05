@@ -6,7 +6,7 @@ authors:
   - SimpleForAPanda
 description: Server-side land-claim protection for Paper 1.21.11 with claim tools, protections, and trust controls.
 softdepend:
-  - AxiomPaperPlugin
+  - AxiomPaper
   - FastAsyncWorldEdit
   - WorldEdit
 commands:

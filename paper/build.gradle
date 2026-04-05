@@ -72,6 +72,8 @@ tasks.named('runServer') {
 		modrinth('axiom-paper-plugin', '6caOwLe6')
 		// FastAsyncWorldEdit 2.15.0
 		github('IntellectualSites', 'FastAsyncWorldEdit', '2.15.0', 'FastAsyncWorldEdit-Paper-2.15.0.jar')
+			// LuckPerms -- needed to test per-player permission scenarios (e.g. safezone.axiom without safezone.command.admin)
+			github('LuckPerms', 'LuckPerms', '5.4.145', 'LuckPerms-Bukkit-5.4.145.jar')
 	}
 }
 

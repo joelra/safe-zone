@@ -22,7 +22,7 @@ public final class AxiomIntegration {
      * classes when the plugin is absent.
      */
     public static boolean isPresent() {
-        return Bukkit.getPluginManager().isPluginEnabled("AxiomPaperPlugin");
+        return Bukkit.getPluginManager().isPluginEnabled("AxiomPaper");
     }
 
     /**
