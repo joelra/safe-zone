@@ -43,13 +43,33 @@ public final class FaweIntegration {
     /**
      * Register the extent injector with WorldEdit's event bus.
      * Only call after {@link #isPresent()} returns {@code true}.
+     *
+     * @return the registered integration instance, which should be retained and
+     *     passed to {@link #unregister(FaweIntegration)} during plugin shutdown
      */
-    public static void register(Plugin plugin, PaperClaimStore claimStore) {
+    public static FaweIntegration register(Plugin plugin, PaperClaimStore claimStore) {
         FaweIntegration integration = new FaweIntegration(claimStore);
         WorldEdit.getInstance().getEventBus().register(integration);
         String provider = Bukkit.getPluginManager().isPluginEnabled("FastAsyncWorldEdit")
             ? "FastAsyncWorldEdit" : "WorldEdit";
         plugin.getLogger().info("Safe Zone: " + provider + " integration enabled (claim-restricted editing).");
+        return integration;
+    }
+
+    /**
+     * Unregister this extent injector from WorldEdit's global event bus.
+     */
+    public void unregister() {
+        WorldEdit.getInstance().getEventBus().unregister(this);
+    }
+
+    /**
+     * Null-safe helper for unregistering a previously registered integration.
+     */
+    public static void unregister(FaweIntegration integration) {
+        if (integration != null) {
+            integration.unregister();
+        }
     }
 
     /**
