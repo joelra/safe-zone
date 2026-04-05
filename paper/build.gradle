@@ -58,6 +58,12 @@ tasks.named('runServer') {
 	minecraftVersion(project.findProperty('minecraft_version').toString())
 	runDirectory = rootProject.layout.projectDirectory.dir('run/paper')
 	workingDir = rootProject.file('run/paper')
+	downloadPlugins {
+		// Axiom Paper Plugin 5.0.3+1.21.11
+		modrinth('axiom-paper-plugin', '6caOwLe6')
+		// FastAsyncWorldEdit 2.15.0
+		github('IntellectualSites', 'FastAsyncWorldEdit', '2.15.0', 'FastAsyncWorldEdit-Paper-2.15.0.jar')
+	}
 }
 
 jar {
