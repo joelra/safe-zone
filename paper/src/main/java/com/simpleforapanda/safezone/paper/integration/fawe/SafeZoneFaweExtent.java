@@ -1,19 +1,17 @@
 package com.simpleforapanda.safezone.paper.integration.fawe;
 
 import com.simpleforapanda.safezone.data.ClaimData;
-import com.simpleforapanda.safezone.data.PermissionResult;
 import com.simpleforapanda.safezone.paper.runtime.PaperClaimStore;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.extent.AbstractDelegateExtent;
 import com.sk89q.worldedit.extent.Extent;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
-import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * WorldEdit extent that restricts all block changes to claim areas the
@@ -26,39 +24,63 @@ import java.util.UUID;
  *   <li>Admins ({@code safezone.command.admin}) bypass all restrictions.</li>
  *   <li>Other players may only place or break blocks inside accessible claims.</li>
  * </ul>
+ *
+ * <p>Accessible claims are fetched once at construction time and stored as
+ * flat int arrays to avoid per-block allocations during large WorldEdit
+ * operations. Any claim changes that occur during the edit are not reflected.
  */
 final class SafeZoneFaweExtent extends AbstractDelegateExtent {
 
     private static final String ADMIN_PERMISSION = "safezone.command.admin";
 
-    private final UUID playerId;
-    private final boolean adminBypass;
-    private final PaperClaimStore claimStore;
-    private final World editedWorld;
+    /**
+     * {@code true} when all block changes should pass through without checks.
+     * Set when the player has admin bypass or the edited world has no claims.
+     */
+    private final boolean unrestricted;
+
+    /**
+     * Flat array of accessible claim bounds: [minX, maxX, minZ, maxZ, ...].
+     * Only populated when {@link #unrestricted} is {@code false}.
+     */
+    private final int[] claimBounds;
 
     SafeZoneFaweExtent(Extent delegate, Player player, World editedWorld, PaperClaimStore claimStore) {
         super(delegate);
-        this.playerId = player.getUniqueId();
-        this.adminBypass = player.hasPermission(ADMIN_PERMISSION);
-        this.claimStore = claimStore;
-        this.editedWorld = editedWorld;
+        if (player.hasPermission(ADMIN_PERMISSION) || !claimStore.isClaimWorld(editedWorld)) {
+            this.unrestricted = true;
+            this.claimBounds = new int[0];
+        } else {
+            this.unrestricted = false;
+            List<ClaimData> accessible = new ArrayList<>(claimStore.getClaimsForOwner(player.getUniqueId()));
+            accessible.addAll(claimStore.getClaimsTrustedFor(player.getUniqueId()));
+            int[] bounds = new int[accessible.size() * 4];
+            int i = 0;
+            for (ClaimData claim : accessible) {
+                bounds[i++] = claim.getMinX();
+                bounds[i++] = claim.getMaxX();
+                bounds[i++] = claim.getMinZ();
+                bounds[i++] = claim.getMaxZ();
+            }
+            this.claimBounds = bounds;
+        }
     }
 
     @Override
     public <T extends BlockStateHolder<T>> boolean setBlock(BlockVector3 location, T block) throws WorldEditException {
-        if (this.adminBypass || isAllowed(location.getBlockX(), location.getBlockY(), location.getBlockZ())) {
+        if (this.unrestricted || isAllowed(location.getBlockX(), location.getBlockZ())) {
             return super.setBlock(location, block);
         }
         return false;
     }
 
-    private boolean isAllowed(int x, int y, int z) {
-        Location loc = new Location(this.editedWorld, x, y, z);
-        Optional<ClaimData> claim = this.claimStore.getClaimAt(loc);
-        if (claim.isEmpty()) {
-            return false;
+    private boolean isAllowed(int x, int z) {
+        for (int i = 0; i < this.claimBounds.length; i += 4) {
+            if (x >= this.claimBounds[i] && x <= this.claimBounds[i + 1]
+                    && z >= this.claimBounds[i + 2] && z <= this.claimBounds[i + 3]) {
+                return true;
+            }
         }
-        PermissionResult result = this.claimStore.getPermission(claim.get(), this.playerId, false);
-        return result != PermissionResult.DENIED;
+        return false;
     }
 }
