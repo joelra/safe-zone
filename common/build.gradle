@@ -1,0 +1,32 @@
+plugins {
+	id 'java-library'
+	id 'net.fabricmc.fabric-loom-companion'
+}
+
+dependencies {
+	api 'com.google.code.gson:gson:2.13.2'
+	api 'org.slf4j:slf4j-api:2.0.17'
+
+	testImplementation platform('org.junit:junit-bom:5.12.2')
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.release = 21
+	options.compilerArgs += ['-Xlint:deprecation']
+}
+
+test {
+	useJUnitPlatform()
+}
+
+java {
+	withSourcesJar()
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
+}
+
+base {
+	archivesName = "${rootProject.name}-common"
+}

@@ -18,4 +18,4 @@ Initial public release for **Minecraft 1.21.11** on Fabric.
 - Piston movement protection is still future work
 - Enderman grief prevention is still future work
 - General non-explosion entity-damage protection is still future work
-- Automatic inactivity expiry processing is still future work
+- Claim inactivity expiry is configurable; `claimExpiryDays = 0` disables it, and owner login refreshes active claims while removing already-expired ones

@@ -4,10 +4,29 @@ pluginManagement {
 			name = 'Fabric'
 			url = 'https://maven.fabricmc.net/'
 		}
+		maven {
+			name = 'Paper'
+			url = 'https://repo.papermc.io/repository/maven-public/'
+		}
 		mavenCentral()
 		gradlePluginPortal()
 	}
 }
 
-// Should match your modid
+dependencyResolutionManagement {
+	repositoriesMode = RepositoriesMode.PREFER_PROJECT
+	repositories {
+		maven {
+			name = 'Fabric'
+			url = 'https://maven.fabricmc.net/'
+		}
+		maven {
+			name = 'Paper'
+			url = 'https://repo.papermc.io/repository/maven-public/'
+		}
+		mavenCentral()
+	}
+}
+
 rootProject.name = 'safe-zone'
+include('common', 'fabric', 'paper')

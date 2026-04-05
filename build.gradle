@@ -1,91 +1,51 @@
 plugins {
-	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
-	id 'maven-publish'
+	id 'base'
+	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}" apply false
 }
 
-version = project.mod_version
-group = project.maven_group
-
-repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
+allprojects {
+	group = project.findProperty('maven_group')
+	version = project.findProperty('mod_version')
 }
 
-loom {
-	mods {
-		"safe-zone" {
-			sourceSet sourceSets.main
-		}
-	}
+tasks.register('runClient') {
+	group = 'fabric'
+	description = 'Run the Fabric client from the fabric module'
+	dependsOn(':fabric:runClient')
 }
 
-dependencies {
-	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings loom.officialMojangMappings()
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-
-	testImplementation platform("org.junit:junit-bom:5.12.2")
-	testImplementation "org.junit.jupiter:junit-jupiter"
-	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+tasks.register('runServer') {
+	group = 'fabric'
+	description = 'Run the Fabric server from the fabric module'
+	dependsOn(':fabric:runServer')
 }
 
-processResources {
-	inputs.property "version", project.version
-
-	filesMatching("fabric.mod.json") {
-		expand "version": inputs.properties.version
-	}
+tasks.register('runDatagen') {
+	group = 'fabric'
+	description = 'Run Fabric data generation from the fabric module'
+	dependsOn(':fabric:runDatagen')
 }
 
-tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
-	it.options.compilerArgs += ['-Xlint:deprecation']
+tasks.register('runPaperServer') {
+	group = 'paper'
+	description = 'Run the local Paper server from the paper module'
+	dependsOn(':paper:runServer')
 }
 
-test {
-	useJUnitPlatform()
+tasks.register('cleanRunFabric', Delete) {
+	group = 'build'
+	description = 'Delete the Fabric runtime directory'
+	delete layout.projectDirectory.dir('run/fabric')
 }
 
-java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
-	withSourcesJar()
-
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+tasks.register('cleanRunPaper', Delete) {
+	group = 'build'
+	description = 'Delete the Paper runtime directory'
+	delete layout.projectDirectory.dir('run/paper')
 }
 
-def archiveProjectName = project.name
-
-jar {
-	inputs.property "projectName", archiveProjectName
-
-	from("LICENSE") {
-		rename { "${it}_${archiveProjectName}"}
-	}
-}
-
-// configure the maven publication
-publishing {
-	publications {
-		create("mavenJava", MavenPublication) {
-			from components.java
-		}
-	}
-
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
-		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
-	}
+tasks.register('cleanRun') {
+	group = 'build'
+	description = 'Delete all local runtime directories'
+	dependsOn('cleanRunFabric', 'cleanRunPaper')
 }
