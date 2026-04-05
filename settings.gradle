@@ -18,7 +18,7 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-	repositoriesMode = RepositoriesMode.PREFER_PROJECT
+	repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
 	repositories {
 		maven {
 			name = 'Fabric'
