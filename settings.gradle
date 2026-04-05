@@ -24,6 +24,10 @@ dependencyResolutionManagement {
 			name = 'Paper'
 			url = 'https://repo.papermc.io/repository/maven-public/'
 		}
+		maven {
+			name = 'EngineHub'
+			url = 'https://maven.enginehub.org/repo/'
+		}
 		mavenCentral()
 	}
 }
