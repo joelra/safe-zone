@@ -39,7 +39,6 @@ import static net.kyori.adventure.text.format.NamedTextColor.YELLOW;
 
 public final class PaperClaimVisualizationService implements Listener {
 	private static final int VISUAL_TICK_INTERVAL = 8;
-	private static final int OUTLINE_STEP = 4;
 	private static final int LOCAL_VERTICAL_SEARCH = 6;
 
 	private static final BlockData PREVIEW_EDGE = Material.YELLOW_STAINED_GLASS.createBlockData();
@@ -53,6 +52,7 @@ public final class PaperClaimVisualizationService implements Listener {
 	private final PaperRuntime runtime;
 	private final PaperClaimWandState wandState;
 	private final Map<UUID, Map<PreviewBlockPos, BlockData>> activePreviews = new ConcurrentHashMap<>();
+	private final Map<UUID, ConfirmedClaim> activeConfirmations = new ConcurrentHashMap<>();
 	private BukkitTask task;
 
 	public PaperClaimVisualizationService(JavaPlugin plugin, PaperRuntime runtime, PaperClaimWandState wandState) {
@@ -81,15 +81,19 @@ public final class PaperClaimVisualizationService implements Listener {
 			clearPlayer(player);
 		}
 		this.activePreviews.clear();
+		this.activeConfirmations.clear();
 	}
 
 	public void clearPlayer(Player player) {
+		this.activeConfirmations.remove(player.getUniqueId());
 		applyPreview(player, Map.of());
 	}
 
 	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent event) {
-		this.activePreviews.remove(event.getPlayer().getUniqueId());
+		UUID playerId = event.getPlayer().getUniqueId();
+		this.activePreviews.remove(playerId);
+		this.activeConfirmations.remove(playerId);
 	}
 
 	private void tick() {
@@ -111,18 +115,23 @@ public final class PaperClaimVisualizationService implements Listener {
 		BlockData edgeState,
 		BlockData cornerState,
 		World world,
-		PreviewContext context
+		PreviewContext context,
+		int maxOutlineStep
 	) {
 		int minX = Math.min(firstCorner.x(), secondCorner.x());
 		int maxX = Math.max(firstCorner.x(), secondCorner.x());
 		int minZ = Math.min(firstCorner.z(), secondCorner.z());
 		int maxZ = Math.max(firstCorner.z(), secondCorner.z());
 
-		for (int x = minX; x <= maxX; x += OUTLINE_STEP) {
+		// Scale the step so small claims show intermediate glass markers between corners
+		int xStep = Math.max(1, Math.min(maxOutlineStep, (maxX - minX) / 2));
+		int zStep = Math.max(1, Math.min(maxOutlineStep, (maxZ - minZ) / 2));
+
+		for (int x = minX; x <= maxX; x += xStep) {
 			addMarker(desiredPreview, world, context, x, minZ, edgeState);
 			addMarker(desiredPreview, world, context, x, maxZ, edgeState);
 		}
-		for (int z = minZ; z <= maxZ; z += OUTLINE_STEP) {
+		for (int z = minZ; z <= maxZ; z += zStep) {
 			addMarker(desiredPreview, world, context, minX, z, edgeState);
 			addMarker(desiredPreview, world, context, maxX, z, edgeState);
 		}
@@ -151,7 +160,8 @@ public final class PaperClaimVisualizationService implements Listener {
 		Map<PreviewBlockPos, BlockData> desiredPreview,
 		ClaimData conflictingClaim,
 		World world,
-		PreviewContext context
+		PreviewContext context,
+		int maxOutlineStep
 	) {
 		if (conflictingClaim == null) {
 			return;
@@ -163,7 +173,8 @@ public final class PaperClaimVisualizationService implements Listener {
 			BLOCKED_EDGE,
 			BLOCKED_EDGE,
 			world,
-			context);
+			context,
+			maxOutlineStep);
 	}
 
 	private void applyPreview(Player player, Map<PreviewBlockPos, BlockData> desiredPreview) {
@@ -302,8 +313,8 @@ public final class PaperClaimVisualizationService implements Listener {
 		return text(" • ", DARK_GRAY);
 	}
 
-	private static ClaimCoordinates resolvePreviewTarget(Player player) {
-		Block targetBlock = player.getTargetBlockExact(64);
+	private static ClaimCoordinates resolvePreviewTarget(Player player, int rangeBlocks) {
+		Block targetBlock = player.getTargetBlockExact(rangeBlocks);
 		Block referenceBlock = targetBlock != null ? targetBlock : player.getLocation().getBlock();
 		return new ClaimCoordinates(referenceBlock.getX(), referenceBlock.getY(), referenceBlock.getZ());
 	}
@@ -378,60 +389,94 @@ public final class PaperClaimVisualizationService implements Listener {
 			return;
 		}
 
+		// Consume any just-completed claim so it shows immediately for wandConfirmDisplaySeconds
+		this.wandState.takeConfirmation(player.getUniqueId()).ifPresent(claim ->
+			this.activeConfirmations.put(player.getUniqueId(),
+				new ConfirmedClaim(claim, System.currentTimeMillis() + config.gameplay.wandConfirmDisplayMillis())));
+
+		int selectionRange = config.gameplay.wandSelectionRangeBlocks;
+		int outlineStep = config.gameplay.wandOutlineStep;
+		ClaimCoordinates lookTarget = resolvePreviewTarget(player, selectionRange);
+
 		Optional<PaperClaimWandState.ResizeState> resizeState = this.wandState.getResizeState(player.getUniqueId());
 		Optional<PaperClaimWandState.PendingSelection> firstSelection = this.wandState.getFirstCorner(player.getUniqueId());
 		if (resizeState.isPresent()) {
-			ClaimCoordinates previewTarget = resolvePreviewTarget(player);
 			ClaimValidationResult validation = claimStore.validateResizedClaim(
 				player.getWorld(),
 				player.getUniqueId(),
 				resizeState.get().claimId(),
 				resizeState.get().fixedCorner(),
-				previewTarget);
-			PreviewContext context = createPreviewContext(player, previewTarget);
+				lookTarget);
+			PreviewContext resizeContext = createPreviewContext(player, lookTarget);
 			addPreview(desiredPreview,
 				resizeState.get().fixedCorner(),
-				previewTarget,
+				lookTarget,
 				PREVIEW_EDGE,
 				PREVIEW_CORNER,
 				player.getWorld(),
-				context);
-			addConflictingClaimPreview(desiredPreview, validation.conflictingClaim(), player.getWorld(), context);
-			overlayMessage = buildResizePreviewMessage(resizeState.get(), previewTarget, validation, config);
+				resizeContext,
+				outlineStep);
+			addConflictingClaimPreview(desiredPreview, validation.conflictingClaim(), player.getWorld(), resizeContext, outlineStep);
+			overlayMessage = buildResizePreviewMessage(resizeState.get(), lookTarget, validation, config);
 		} else if (firstSelection.isPresent()) {
-			ClaimCoordinates previewTarget = resolvePreviewTarget(player);
 			ClaimValidationResult validation = claimStore.validateNewClaim(
 				player.getWorld(),
 				player.getUniqueId(),
 				firstSelection.get().corner(),
-				previewTarget);
-			PreviewContext context = createPreviewContext(player, previewTarget);
+				lookTarget);
+			PreviewContext selectionContext = createPreviewContext(player, lookTarget);
 			addPreview(desiredPreview,
 				firstSelection.get().corner(),
-				previewTarget,
+				lookTarget,
 				PREVIEW_EDGE,
 				PREVIEW_CORNER,
 				player.getWorld(),
-				context);
-			addConflictingClaimPreview(desiredPreview, validation.conflictingClaim(), player.getWorld(), context);
-			overlayMessage = buildPreviewMessage(firstSelection.get().corner(), previewTarget, validation, config);
+				selectionContext,
+				outlineStep);
+			addConflictingClaimPreview(desiredPreview, validation.conflictingClaim(), player.getWorld(), selectionContext, outlineStep);
+			overlayMessage = buildPreviewMessage(firstSelection.get().corner(), lookTarget, validation, config);
 		} else {
-			Optional<ClaimData> claim = claimStore.getClaimAt(player.getLocation());
+			// Check active confirmation first (just created/resized a claim)
+			ConfirmedClaim confirmation = this.activeConfirmations.get(player.getUniqueId());
+			if (confirmation != null && System.currentTimeMillis() > confirmation.expiresAt()) {
+				this.activeConfirmations.remove(player.getUniqueId());
+				confirmation = null;
+			}
+
+			Optional<ClaimData> claim = confirmation != null
+				? Optional.of(confirmation.claim())
+				: claimStore.getClaimAt(player.getLocation());
+
+			// Fall back to the block the player is looking at (covers post-creation and wand-inspection)
+			if (claim.isEmpty()) {
+				claim = claimStore.getClaimAt(new Location(player.getWorld(), lookTarget.x(), lookTarget.y(), lookTarget.z()));
+			}
+
 			if (claim.isPresent()) {
+				// Use player's block position for the context anchor so corner heights are stable as the player looks around
+				ClaimCoordinates playerCoords = new ClaimCoordinates(
+					player.getLocation().getBlockX(),
+					player.getLocation().getBlockY(),
+					player.getLocation().getBlockZ());
+				PreviewContext context = createPreviewContext(player, playerCoords);
 				PermissionResult permission = claimStore.getPermission(
 					claim.get(),
 					player.getUniqueId(),
 					player.hasPermission("safezone.command.admin"));
+				if (confirmation != null) {
+					// Player just claimed this — they own it regardless of standing position
+					permission = PermissionResult.OWNER;
+				}
 				boolean pendingRemoval = permission == PermissionResult.OWNER
 					&& this.wandState.isPendingRemoval(player.getUniqueId(), claim.get().claimId);
-				ClaimCoordinates anchorTarget = resolvePreviewTarget(player);
 				addPreview(desiredPreview,
 					new ClaimCoordinates(claim.get().getMinX(), player.getLocation().getBlockY(), claim.get().getMinZ()),
 					new ClaimCoordinates(claim.get().getMaxX(), player.getLocation().getBlockY(), claim.get().getMaxZ()),
 					pendingRemoval ? BLOCKED_EDGE : permissionEdge(permission),
 					PREVIEW_CORNER,
 					player.getWorld(),
-					createPreviewContext(player, anchorTarget));
+					context,
+					outlineStep);
 				overlayMessage = buildClaimOverlay(claim.get(), permission, pendingRemoval);
 			}
 		}
@@ -463,5 +508,8 @@ public final class PaperClaimVisualizationService implements Listener {
 	}
 
 	private record PreviewBlockPos(UUID worldId, int x, int y, int z) {
+	}
+
+	private record ConfirmedClaim(ClaimData claim, long expiresAt) {
 	}
 }

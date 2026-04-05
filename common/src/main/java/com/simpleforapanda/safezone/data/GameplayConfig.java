@@ -12,6 +12,9 @@ public class GameplayConfig {
 	public static final int DEFAULT_NOTIFICATION_RETENTION_DAYS = 30;
 	public static final int DEFAULT_WAND_REMOVE_CONFIRM_SECONDS = 5;
 	public static final int DEFAULT_COMMAND_REMOVE_CONFIRM_SECONDS = 10;
+	public static final int DEFAULT_WAND_SELECTION_RANGE_BLOCKS = 64;
+	public static final int DEFAULT_WAND_OUTLINE_STEP = 4;
+	public static final int DEFAULT_WAND_CONFIRM_DISPLAY_SECONDS = 3;
 
 	public String claimWandItemId = DEFAULT_CLAIM_WAND_ITEM_ID;
 	public boolean starterKitEnabled = true;
@@ -26,12 +29,15 @@ public class GameplayConfig {
 	public int notificationRetentionDays = DEFAULT_NOTIFICATION_RETENTION_DAYS;
 	public int wandRemoveConfirmSeconds = DEFAULT_WAND_REMOVE_CONFIRM_SECONDS;
 	public int commandRemoveConfirmSeconds = DEFAULT_COMMAND_REMOVE_CONFIRM_SECONDS;
+	public int wandSelectionRangeBlocks = DEFAULT_WAND_SELECTION_RANGE_BLOCKS;
+	public int wandOutlineStep = DEFAULT_WAND_OUTLINE_STEP;
+	public int wandConfirmDisplaySeconds = DEFAULT_WAND_CONFIRM_DISPLAY_SECONDS;
 
 	public void ensureDefaults() {
 		if (this.claimWandItemId == null || this.claimWandItemId.isBlank()) {
 			this.claimWandItemId = DEFAULT_CLAIM_WAND_ITEM_ID;
 		}
-		if (this.defaultMaxClaims < 1) {
+		if (this.defaultMaxClaims < 0) {
 			this.defaultMaxClaims = DEFAULT_MAX_CLAIMS;
 		}
 		if (this.maxClaimWidth < 1) {
@@ -54,6 +60,15 @@ public class GameplayConfig {
 		}
 		if (this.commandRemoveConfirmSeconds < 1) {
 			this.commandRemoveConfirmSeconds = DEFAULT_COMMAND_REMOVE_CONFIRM_SECONDS;
+		}
+		if (this.wandSelectionRangeBlocks < 1) {
+			this.wandSelectionRangeBlocks = DEFAULT_WAND_SELECTION_RANGE_BLOCKS;
+		}
+		if (this.wandOutlineStep < 1) {
+			this.wandOutlineStep = DEFAULT_WAND_OUTLINE_STEP;
+		}
+		if (this.wandConfirmDisplaySeconds < 0) {
+			this.wandConfirmDisplaySeconds = DEFAULT_WAND_CONFIRM_DISPLAY_SECONDS;
 		}
 	}
 
@@ -80,6 +95,10 @@ public class GameplayConfig {
 		return TimeUnit.SECONDS.toMillis(this.commandRemoveConfirmSeconds);
 	}
 
+	public long wandConfirmDisplayMillis() {
+		return TimeUnit.SECONDS.toMillis(this.wandConfirmDisplaySeconds);
+	}
+
 	public GameplayConfig copy() {
 		GameplayConfig copy = new GameplayConfig();
 		copy.claimWandItemId = this.claimWandItemId;
@@ -95,6 +114,9 @@ public class GameplayConfig {
 		copy.notificationRetentionDays = this.notificationRetentionDays;
 		copy.wandRemoveConfirmSeconds = this.wandRemoveConfirmSeconds;
 		copy.commandRemoveConfirmSeconds = this.commandRemoveConfirmSeconds;
+		copy.wandSelectionRangeBlocks = this.wandSelectionRangeBlocks;
+		copy.wandOutlineStep = this.wandOutlineStep;
+		copy.wandConfirmDisplaySeconds = this.wandConfirmDisplaySeconds;
 		return copy;
 	}
 }

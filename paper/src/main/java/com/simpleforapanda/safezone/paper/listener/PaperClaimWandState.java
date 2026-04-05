@@ -1,6 +1,7 @@
 package com.simpleforapanda.safezone.paper.listener;
 
 import com.simpleforapanda.safezone.data.ClaimCoordinates;
+import com.simpleforapanda.safezone.data.ClaimData;
 import com.simpleforapanda.safezone.data.GameplayConfig;
 import org.bukkit.entity.Player;
 
@@ -16,6 +17,7 @@ public final class PaperClaimWandState {
 	private final Map<UUID, PendingSelection> firstCorners = new ConcurrentHashMap<>();
 	private final Map<UUID, PendingRemoval> pendingRemovals = new ConcurrentHashMap<>();
 	private final Map<UUID, ResizeState> resizeStates = new ConcurrentHashMap<>();
+	private final Map<UUID, ClaimData> pendingConfirmations = new ConcurrentHashMap<>();
 
 	public Optional<PendingSelection> getFirstCorner(UUID playerId) {
 		return Optional.ofNullable(this.firstCorners.get(playerId));
@@ -72,10 +74,19 @@ public final class PaperClaimWandState {
 			|| this.resizeStates.containsKey(playerId);
 	}
 
+	public void storePendingConfirmation(UUID playerId, ClaimData claim) {
+		this.pendingConfirmations.put(playerId, claim);
+	}
+
+	public Optional<ClaimData> takeConfirmation(UUID playerId) {
+		return Optional.ofNullable(this.pendingConfirmations.remove(playerId));
+	}
+
 	public void clearPlayer(UUID playerId) {
 		this.firstCorners.remove(playerId);
 		this.pendingRemovals.remove(playerId);
 		this.resizeStates.remove(playerId);
+		this.pendingConfirmations.remove(playerId);
 	}
 
 	public boolean cancelIfNoLongerHoldingWand(Player player, GameplayConfig gameplayConfig) {

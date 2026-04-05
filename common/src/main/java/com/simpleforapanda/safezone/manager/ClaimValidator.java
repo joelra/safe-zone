@@ -34,7 +34,7 @@ public final class ClaimValidator {
 			|| Math.abs(secondCorner.z() - firstCorner.z()) + 1 > maxClaimDepth) {
 			return ClaimValidationResult.denied(ClaimValidationFailure.CLAIM_TOO_LARGE, null);
 		}
-		if (enforceClaimLimit && ownerClaimCount >= ownerClaimLimit) {
+		if (enforceClaimLimit && ownerClaimLimit > 0 && ownerClaimCount >= ownerClaimLimit) {
 			return ClaimValidationResult.denied(ClaimValidationFailure.CLAIM_LIMIT_REACHED, null);
 		}
 
