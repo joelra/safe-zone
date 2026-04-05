@@ -28,7 +28,7 @@ java {
 }
 
 base {
-	archivesName = "${rootProject.name}-paper"
+	archivesName = 'SafeZone-Paper'
 }
 
 tasks.named('runServer') {
@@ -40,6 +40,6 @@ tasks.named('runServer') {
 jar {
 	from(project(':common').sourceSets.main.output)
 	from(rootProject.file('LICENSE')) {
-		rename { "${it}_${rootProject.name}-paper" }
+		rename { "${it}_SafeZone-Paper" }
 	}
 }

@@ -57,13 +57,13 @@ java {
 }
 
 base {
-	archivesName = rootProject.name
+	archivesName = 'SafeZone-Fabric'
 }
 
 jar {
 	from(project(':common').sourceSets.main.output)
 	from(rootProject.file('LICENSE')) {
-		rename { "${it}_${rootProject.name}" }
+		rename { "${it}_SafeZone-Fabric" }
 	}
 }
 
