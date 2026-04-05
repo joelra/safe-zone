@@ -1,6 +1,8 @@
 package com.simpleforapanda.safezone.paper.runtime;
 
 import com.simpleforapanda.safezone.data.SafeZoneConfig;
+import com.simpleforapanda.safezone.paper.integration.axiom.AxiomIntegration;
+import com.simpleforapanda.safezone.paper.integration.fawe.FaweIntegration;
 import com.simpleforapanda.safezone.paper.listener.PaperAdminInspectService;
 import com.simpleforapanda.safezone.paper.listener.PaperClaimVisualizationService;
 import com.simpleforapanda.safezone.paper.listener.PaperClaimWandListener;
@@ -60,6 +62,12 @@ public final class PaperRuntime {
 		this.context.plugin().getServer().getPluginManager().registerEvents(new PaperEntityProtectionListener(this), this.context.plugin());
 		this.context.plugin().getServer().getPluginManager().registerEvents(this.services.trustMenuService(), this.context.plugin());
 		this.claimVisualizationService.start();
+		if (AxiomIntegration.isPresent()) {
+			AxiomIntegration.register(this.context.plugin(), this.services.claimStore());
+		}
+		if (FaweIntegration.isPresent()) {
+			FaweIntegration.register(this.context.plugin(), this.services.claimStore());
+		}
 		this.context.logger().info("Safe Zone Paper runtime enabled at " + this.context.paths().pluginDirectory());
 	}
 
