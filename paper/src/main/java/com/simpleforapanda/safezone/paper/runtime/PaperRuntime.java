@@ -64,10 +64,12 @@ public final class PaperRuntime {
 		this.context.plugin().getServer().getPluginManager().registerEvents(new PaperEntityProtectionListener(this), this.context.plugin());
 		this.context.plugin().getServer().getPluginManager().registerEvents(this.services.trustMenuService(), this.context.plugin());
 		this.claimVisualizationService.start();
-		if (AxiomIntegration.isPresent()) {
+		// Check for Axiom/FAWE with pure Bukkit before referencing their integration
+		// classes. Both classes import plugin API types; loading them before the plugin
+		// is confirmed present risks a NoClassDefFoundError on servers without Axiom/FAWE.
+		if (Bukkit.getPluginManager().isPluginEnabled("AxiomPaper")) {
 			AxiomIntegration.register(this.context.plugin(), this.services.claimStore());
 		}
-		// Check for WorldEdit/FAWE with pure Bukkit before loading FaweIntegration.
 		// FaweIntegration has WorldEdit types in method signatures; loading it before
 		// confirming the dependency is present risks a NoClassDefFoundError.
 		if (Bukkit.getPluginManager().isPluginEnabled("FastAsyncWorldEdit")
