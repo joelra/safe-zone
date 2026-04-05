@@ -1,3 +1,5 @@
+import xyz.jpenilla.runpaper.task.RunServer
+
 plugins {
 	id 'java'
 	id 'xyz.jpenilla.run-paper' version '3.0.2'
@@ -75,6 +77,12 @@ tasks.named('runServer') {
 		// LuckPerms v5.5.17 -- needed to test per-player permission scenarios (e.g. safezone.axiom without safezone.command.admin)
 		modrinth('luckperms', 'OrIs0S6b')
 	}
+}
+
+tasks.register('runServerCore', RunServer) {
+	minecraftVersion(project.findProperty('minecraft_version').toString())
+	runDirectory = rootProject.layout.projectDirectory.dir('run/paper-core')
+	workingDir = rootProject.file('run/paper-core')
 }
 
 jar {
