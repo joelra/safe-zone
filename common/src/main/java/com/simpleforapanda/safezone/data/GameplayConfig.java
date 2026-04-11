@@ -12,6 +12,7 @@ public class GameplayConfig {
 	public static final int DEFAULT_NOTIFICATION_RETENTION_DAYS = 30;
 	public static final int DEFAULT_WAND_REMOVE_CONFIRM_SECONDS = 5;
 	public static final int DEFAULT_COMMAND_REMOVE_CONFIRM_SECONDS = 10;
+	public static final int DEFAULT_WAND_SELECTION_RANGE_BLOCKS = 30;
 
 	public String claimWandItemId = DEFAULT_CLAIM_WAND_ITEM_ID;
 	public boolean starterKitEnabled = true;
@@ -26,6 +27,7 @@ public class GameplayConfig {
 	public int notificationRetentionDays = DEFAULT_NOTIFICATION_RETENTION_DAYS;
 	public int wandRemoveConfirmSeconds = DEFAULT_WAND_REMOVE_CONFIRM_SECONDS;
 	public int commandRemoveConfirmSeconds = DEFAULT_COMMAND_REMOVE_CONFIRM_SECONDS;
+	public int wandSelectionRangeBlocks = DEFAULT_WAND_SELECTION_RANGE_BLOCKS;
 
 	public void ensureDefaults() {
 		if (this.claimWandItemId == null || this.claimWandItemId.isBlank()) {
@@ -55,6 +57,9 @@ public class GameplayConfig {
 		if (this.commandRemoveConfirmSeconds < 1) {
 			this.commandRemoveConfirmSeconds = DEFAULT_COMMAND_REMOVE_CONFIRM_SECONDS;
 		}
+		if (this.wandSelectionRangeBlocks < 0) {
+			this.wandSelectionRangeBlocks = DEFAULT_WAND_SELECTION_RANGE_BLOCKS;
+		}
 	}
 
 	public int effectiveMinDistance() {
@@ -70,6 +75,15 @@ public class GameplayConfig {
 
 	public long notificationRetentionMillis() {
 		return TimeUnit.DAYS.toMillis(this.notificationRetentionDays);
+	}
+
+	/**
+	 * Returns the effective wand selection range in blocks.
+	 * A configured value of {@code 0} means unlimited, resolved here to 512 blocks
+	 * (the maximum vanilla render distance), which is the largest safe raycast distance.
+	 */
+	public double effectiveWandSelectionRange() {
+		return this.wandSelectionRangeBlocks == 0 ? 512.0 : this.wandSelectionRangeBlocks;
 	}
 
 	public long wandRemoveConfirmWindowMillis() {
@@ -95,6 +109,7 @@ public class GameplayConfig {
 		copy.notificationRetentionDays = this.notificationRetentionDays;
 		copy.wandRemoveConfirmSeconds = this.wandRemoveConfirmSeconds;
 		copy.commandRemoveConfirmSeconds = this.commandRemoveConfirmSeconds;
+		copy.wandSelectionRangeBlocks = this.wandSelectionRangeBlocks;
 		return copy;
 	}
 }

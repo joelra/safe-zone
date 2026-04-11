@@ -29,7 +29,7 @@ import java.util.List;
  * flat int arrays to avoid per-block allocations during large WorldEdit
  * operations. Any claim changes that occur during the edit are not reflected.
  */
-final class SafeZoneFaweExtent extends AbstractDelegateExtent {
+class SafeZoneFaweExtent extends AbstractDelegateExtent {
 
     private static final String ADMIN_PERMISSION = "safezone.command.admin";
     private static final int[] EMPTY_BOUNDS = new int[0];
@@ -38,13 +38,13 @@ final class SafeZoneFaweExtent extends AbstractDelegateExtent {
      * {@code true} when all block changes should pass through without checks.
      * Set only when the player has the admin bypass permission.
      */
-    private final boolean unrestricted;
+    final boolean unrestricted;
 
     /**
      * Flat array of accessible claim bounds: [minX, maxX, minZ, maxZ, ...].
      * Only populated when {@link #unrestricted} is {@code false}.
      */
-    private final int[] claimBounds;
+    final int[] claimBounds;
 
     SafeZoneFaweExtent(Extent delegate, Player player, World editedWorld, PaperClaimStore claimStore) {
         super(delegate);
@@ -52,9 +52,8 @@ final class SafeZoneFaweExtent extends AbstractDelegateExtent {
             this.unrestricted = true;
             this.claimBounds = EMPTY_BOUNDS;
         } else if (!claimStore.isClaimWorld(editedWorld)) {
-            // Not the claim world: no claims exist here, so deny all edits
-            // to stay consistent with the Axiom integration which also returns
-            // NONE_ALLOWED for non-claim worlds.
+            // Not the claim world: deny all edits (no claims exist here, so no
+            // areas are accessible). This matches the Axiom integration behaviour.
             this.unrestricted = false;
             this.claimBounds = EMPTY_BOUNDS;
         } else {
@@ -81,7 +80,7 @@ final class SafeZoneFaweExtent extends AbstractDelegateExtent {
         return false;
     }
 
-    private boolean isAllowed(int x, int z) {
+    boolean isAllowed(int x, int z) {
         for (int i = 0; i < this.claimBounds.length; i += 4) {
             if (x >= this.claimBounds[i] && x <= this.claimBounds[i + 1]
                     && z >= this.claimBounds[i + 2] && z <= this.claimBounds[i + 3]) {

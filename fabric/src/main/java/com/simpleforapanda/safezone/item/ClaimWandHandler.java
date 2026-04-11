@@ -122,6 +122,11 @@ public final class ClaimWandHandler {
 	private boolean tryHandleRemoval(ServerPlayer player, ServerLevel level, BlockPos clickedPos) {
 		var claim = this.claimManager.getClaimAt(clickedPos);
 		if (claim.isEmpty() || !claim.get().owns(player.getUUID())) {
+			// Fallback: if the click landed outside the claim (e.g. extended wand reach while
+			// looking horizontally), check whether the player is standing inside their own claim.
+			claim = this.claimManager.getClaimAt(player.blockPosition());
+		}
+		if (claim.isEmpty() || !claim.get().owns(player.getUUID())) {
 			return false;
 		}
 
@@ -132,6 +137,7 @@ public final class ClaimWandHandler {
 			this.claimManager.removeClaim(claim.get().claimId);
 			this.pendingRemovals.remove(player.getUUID());
 			this.firstCorners.remove(player.getUUID());
+			this.resizeStates.remove(player.getUUID());
 			level.sendParticles(ParticleTypes.POOF, clickedPos.getX() + 0.5D, clickedPos.getY() + 1.0D, clickedPos.getZ() + 0.5D, 12, 0.45D, 0.35D, 0.45D, 0.02D);
 			playFeedback(level, clickedPos, SoundEvents.EXPERIENCE_ORB_PICKUP, 0.9F, 0.65F);
 			PlayerMessageHelper.sendStatus(player, "REMOVED", net.minecraft.ChatFormatting.RED,

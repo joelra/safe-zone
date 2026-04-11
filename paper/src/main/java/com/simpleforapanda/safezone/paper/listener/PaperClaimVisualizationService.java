@@ -12,7 +12,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
@@ -38,6 +41,7 @@ import static net.kyori.adventure.text.format.NamedTextColor.RED;
 import static net.kyori.adventure.text.format.NamedTextColor.YELLOW;
 
 public final class PaperClaimVisualizationService implements Listener {
+	private static final NamespacedKey WAND_REACH_KEY = new NamespacedKey("safe-zone", "wand_reach");
 	private static final int VISUAL_TICK_INTERVAL = 8;
 	private static final int OUTLINE_STEP = 4;
 	private static final int LOCAL_VERTICAL_SEARCH = 6;
@@ -84,12 +88,40 @@ public final class PaperClaimVisualizationService implements Listener {
 	}
 
 	public void clearPlayer(Player player) {
+		removeWandReach(player);
 		applyPreview(player, Map.of());
 	}
 
 	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent event) {
+		removeWandReach(event.getPlayer());
 		this.activePreviews.remove(event.getPlayer().getUniqueId());
+	}
+
+	private void applyWandReach(Player player, SafeZoneConfig config) {
+		var attr = player.getAttribute(Attribute.BLOCK_INTERACTION_RANGE);
+		if (attr == null) return;
+		double range = config.gameplay.effectiveWandSelectionRange();
+		double delta = range - attr.getBaseValue();
+		if (delta <= 0) {
+			attr.removeModifier(WAND_REACH_KEY);
+			return;
+		}
+		for (AttributeModifier mod : attr.getModifiers()) {
+			if (mod.getKey().equals(WAND_REACH_KEY)) {
+				if (mod.getAmount() == delta) return;
+				attr.removeModifier(WAND_REACH_KEY);
+				break;
+			}
+		}
+		attr.addModifier(new AttributeModifier(WAND_REACH_KEY, delta, AttributeModifier.Operation.ADD_NUMBER));
+	}
+
+	private static void removeWandReach(Player player) {
+		var attr = player.getAttribute(Attribute.BLOCK_INTERACTION_RANGE);
+		if (attr != null) {
+			attr.removeModifier(WAND_REACH_KEY);
+		}
 	}
 
 	private void tick() {
@@ -302,8 +334,9 @@ public final class PaperClaimVisualizationService implements Listener {
 		return text(" • ", DARK_GRAY);
 	}
 
-	private static ClaimCoordinates resolvePreviewTarget(Player player) {
-		Block targetBlock = player.getTargetBlockExact(64);
+	private static ClaimCoordinates resolvePreviewTarget(Player player, SafeZoneConfig config) {
+		int range = (int) config.gameplay.effectiveWandSelectionRange();
+		Block targetBlock = player.getTargetBlockExact(range);
 		Block referenceBlock = targetBlock != null ? targetBlock : player.getLocation().getBlock();
 		return new ClaimCoordinates(referenceBlock.getX(), referenceBlock.getY(), referenceBlock.getZ());
 	}
@@ -374,14 +407,16 @@ public final class PaperClaimVisualizationService implements Listener {
 		Component overlayMessage = null;
 		if (!PaperClaimWandSupport.isClaimWand(player.getInventory().getItemInMainHand(), config.gameplay)) {
 			this.wandState.cancelIfNoLongerHoldingWand(player, config.gameplay);
+			removeWandReach(player);
 			applyPreview(player, desiredPreview);
 			return;
 		}
+		applyWandReach(player, config);
 
 		Optional<PaperClaimWandState.ResizeState> resizeState = this.wandState.getResizeState(player.getUniqueId());
 		Optional<PaperClaimWandState.PendingSelection> firstSelection = this.wandState.getFirstCorner(player.getUniqueId());
 		if (resizeState.isPresent()) {
-			ClaimCoordinates previewTarget = resolvePreviewTarget(player);
+			ClaimCoordinates previewTarget = resolvePreviewTarget(player, config);
 			ClaimValidationResult validation = claimStore.validateResizedClaim(
 				player.getWorld(),
 				player.getUniqueId(),
@@ -399,7 +434,7 @@ public final class PaperClaimVisualizationService implements Listener {
 			addConflictingClaimPreview(desiredPreview, validation.conflictingClaim(), player.getWorld(), context);
 			overlayMessage = buildResizePreviewMessage(resizeState.get(), previewTarget, validation, config);
 		} else if (firstSelection.isPresent()) {
-			ClaimCoordinates previewTarget = resolvePreviewTarget(player);
+			ClaimCoordinates previewTarget = resolvePreviewTarget(player, config);
 			ClaimValidationResult validation = claimStore.validateNewClaim(
 				player.getWorld(),
 				player.getUniqueId(),
@@ -424,7 +459,7 @@ public final class PaperClaimVisualizationService implements Listener {
 					player.hasPermission("safezone.command.admin"));
 				boolean pendingRemoval = permission == PermissionResult.OWNER
 					&& this.wandState.isPendingRemoval(player.getUniqueId(), claim.get().claimId);
-				ClaimCoordinates anchorTarget = resolvePreviewTarget(player);
+				ClaimCoordinates anchorTarget = resolvePreviewTarget(player, config);
 				addPreview(desiredPreview,
 					new ClaimCoordinates(claim.get().getMinX(), player.getLocation().getBlockY(), claim.get().getMinZ()),
 					new ClaimCoordinates(claim.get().getMaxX(), player.getLocation().getBlockY(), claim.get().getMaxZ()),

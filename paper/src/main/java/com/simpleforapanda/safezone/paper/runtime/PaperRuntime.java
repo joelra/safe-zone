@@ -1,6 +1,7 @@
 package com.simpleforapanda.safezone.paper.runtime;
 
 import com.simpleforapanda.safezone.data.SafeZoneConfig;
+import com.simpleforapanda.safezone.manager.PersistentStateHelper;
 import com.simpleforapanda.safezone.paper.integration.axiom.AxiomIntegration;
 import com.simpleforapanda.safezone.paper.integration.fawe.FaweIntegration;
 import com.simpleforapanda.safezone.paper.listener.PaperAdminInspectService;
@@ -49,6 +50,10 @@ public final class PaperRuntime {
 
 	public void start() {
 		this.context.paths().ensureDirectories();
+		PersistentStateHelper.cleanupStaleTempFile(this.context.paths().claimsFile());
+		PersistentStateHelper.cleanupStaleTempFile(this.context.paths().playerLimitsFile());
+		PersistentStateHelper.cleanupStaleTempFile(this.context.paths().starterKitRecipientsFile());
+		PersistentStateHelper.cleanupStaleTempFile(this.context.paths().notificationsFile());
 		this.services.configService().load();
 		this.services.auditLogger().load();
 		SafeZoneConfig config = this.services.configService().current();
@@ -83,12 +88,21 @@ public final class PaperRuntime {
 		SafeZoneConfig config = this.services.configService().current();
 		this.services.adminInspectService().clear();
 		this.claimVisualizationService.stop();
-		FaweIntegration.unregister(this.faweIntegration);
+		unregisterFawe();
 		this.services.claimStore().save();
 		this.services.notificationStore().save(config);
 		this.services.configService().save();
 		this.services.auditLogger().unload();
 		this.context.logger().info("Safe Zone Paper runtime disabled");
+	}
+
+	// Isolated so that FaweIntegration (which references WorldEdit types) is only
+	// resolved by the JVM when this method is actually called — which only happens
+	// when faweIntegration is non-null, meaning FAWE was confirmed present at startup.
+	private void unregisterFawe() {
+		if (this.faweIntegration != null) {
+			this.faweIntegration.unregister();
+		}
 	}
 
 	public void reload() {

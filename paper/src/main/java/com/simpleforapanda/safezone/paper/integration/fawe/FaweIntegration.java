@@ -1,5 +1,6 @@
 package com.simpleforapanda.safezone.paper.integration.fawe;
 
+import com.fastasyncworldedit.core.util.WEManager;
 import com.simpleforapanda.safezone.paper.runtime.PaperClaimStore;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEdit;
@@ -29,9 +30,11 @@ import org.bukkit.plugin.Plugin;
 public final class FaweIntegration {
 
     private final PaperClaimStore claimStore;
+    private final boolean faweActive;
 
-    private FaweIntegration(PaperClaimStore claimStore) {
+    private FaweIntegration(PaperClaimStore claimStore, boolean faweActive) {
         this.claimStore = claimStore;
+        this.faweActive = faweActive;
     }
 
     /**
@@ -43,11 +46,20 @@ public final class FaweIntegration {
      *     passed to {@link #unregister(FaweIntegration)} during plugin shutdown
      */
     public static FaweIntegration register(Plugin plugin, PaperClaimStore claimStore) {
-        FaweIntegration integration = new FaweIntegration(claimStore);
+        boolean faweActive = Bukkit.getPluginManager().isPluginEnabled("FastAsyncWorldEdit");
+        FaweIntegration integration = new FaweIntegration(claimStore, faweActive);
         WorldEdit.getInstance().getEventBus().register(integration);
-        String provider = Bukkit.getPluginManager().isPluginEnabled("FastAsyncWorldEdit")
-            ? "FastAsyncWorldEdit" : "WorldEdit";
-        plugin.getLogger().info("Safe Zone: " + provider + " integration enabled (claim-restricted editing).");
+        if (faweActive) {
+            // Register a FaweMaskManager so FAWE consults our claim boundaries for
+            // every player edit session. This is the correct FAWE 2.x integration
+            // point — IBatchProcessor via event.setExtent() is NOT called by FAWE's
+            // batch processing queue for externally-set extents.
+            // Requires region-restrictions: true in FastAsyncWorldEdit/config.yml.
+            WEManager.weManager().addManager(new SafeZoneMaskManager(claimStore));
+            plugin.getLogger().info("Safe Zone: FastAsyncWorldEdit integration enabled (claim-restricted editing via FaweMaskManager).");
+        } else {
+            plugin.getLogger().info("Safe Zone: WorldEdit integration enabled (claim-restricted editing).");
+        }
         return integration;
     }
 
@@ -59,22 +71,21 @@ public final class FaweIntegration {
     }
 
     /**
-     * Null-safe helper for unregistering a previously registered integration.
-     */
-    public static void unregister(FaweIntegration integration) {
-        if (integration != null) {
-            integration.unregister();
-        }
-    }
-
-    /**
      * Called by WorldEdit for every new {@link EditSession}.
-     * Wraps the session's extent with {@link SafeZoneFaweExtent} when the
-     * actor is a player, intercepting all block changes before they are written.
+     *
+     * <p>For plain WorldEdit (no FAWE), wraps the session's extent with
+     * {@link SafeZoneFaweExtent} to intercept {@code setBlock()} calls and enforce
+     * claim boundaries. For FastAsyncWorldEdit, {@link SafeZoneMaskManager} handles
+     * the restriction at the FAWE mask level (FAWE's fast-placement queue bypasses
+     * the extent chain entirely, so extent injection is ineffective there).
      */
     @Subscribe
     public void onEditSession(EditSessionEvent event) {
-        if (event.getStage() != EditSession.Stage.BEFORE_CHANGE) {
+        if (event.getStage() != EditSession.Stage.BEFORE_HISTORY) {
+            return;
+        }
+        if (this.faweActive) {
+            // SafeZoneMaskManager registered with WEManager handles FAWE.
             return;
         }
         Actor actor = event.getActor();
@@ -85,7 +96,6 @@ public final class FaweIntegration {
         if (player == null) {
             return;
         }
-        // Use the world being edited (may differ from the player's current world).
         World editedWorld = event.getWorld() != null
             ? BukkitAdapter.adapt(event.getWorld())
             : player.getWorld();

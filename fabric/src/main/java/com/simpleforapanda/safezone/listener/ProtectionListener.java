@@ -16,6 +16,7 @@ import net.fabricmc.fabric.api.event.player.ItemEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
@@ -32,6 +33,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
 
 import java.util.Map;
 import java.util.UUID;
@@ -60,6 +62,7 @@ public final class ProtectionListener {
 		AttackBlockCallback.EVENT.register(this::onAttackBlock);
 		PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> this.allowBuildAction(player, pos));
 		UseBlockCallback.EVENT.register(this::onUseBlock);
+		UseItemCallback.EVENT.register(this::onUseItem);
 		UseEntityCallback.EVENT.register(this::onUseEntity);
 		ItemEvents.USE_ON.register(this::onUseItemOnBlock);
 	}
@@ -146,6 +149,31 @@ public final class ProtectionListener {
 		}
 
 		return InteractionResult.PASS;
+	}
+
+	private InteractionResult onUseItem(Player player, Level level, net.minecraft.world.InteractionHand hand) {
+		ItemStack heldItem = player.getItemInHand(hand);
+		if (hand != net.minecraft.world.InteractionHand.MAIN_HAND || !this.claimWandHandler.isClaimWand(heldItem)) {
+			return InteractionResult.PASS;
+		}
+		if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
+			return InteractionResult.SUCCESS;
+		}
+		// Guard: if a block is within vanilla reach, UseBlockCallback already handled this click.
+		double vanillaReach = player.blockInteractionRange();
+		HitResult vanillaHit = player.pick(vanillaReach, 0.0F, false);
+		if (vanillaHit.getType() == HitResult.Type.BLOCK) {
+			return InteractionResult.SUCCESS;
+		}
+		double range = this.claimManager.getGameplayConfig().effectiveWandSelectionRange();
+		HitResult hitResult = player.pick(range, 0.0F, false);
+		if (hitResult instanceof BlockHitResult blockHit && hitResult.getType() == HitResult.Type.BLOCK) {
+			InteractionResult result = this.claimWandHandler.handleUseOn(serverPlayer, (net.minecraft.server.level.ServerLevel) level, blockHit.getBlockPos());
+			if (result == InteractionResult.SUCCESS) {
+				this.claimVisualizationManager.refreshPlayer(serverPlayer);
+			}
+		}
+		return InteractionResult.SUCCESS;
 	}
 
 	private InteractionResult onUseEntity(Player player, Level level, net.minecraft.world.InteractionHand hand, net.minecraft.world.entity.Entity entity,
