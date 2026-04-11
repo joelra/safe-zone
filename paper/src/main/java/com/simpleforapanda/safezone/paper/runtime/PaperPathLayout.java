@@ -18,6 +18,7 @@ public final class PaperPathLayout implements PathLayoutPort {
 	private static final String CLAIMS_FILE_NAME = "claims.json";
 	private static final String PLAYER_LIMITS_FILE_NAME = "player_limits.json";
 	private static final String STARTER_KIT_RECIPIENTS_FILE_NAME = "starter_kit_recipients.json";
+	private static final String CLAIM_SHOW_PREFERENCES_FILE_NAME = "claim_show_preferences.json";
 	private static final String AUDIT_LOG_FILE_NAME = "audit.log";
 
 	private final Path pluginDirectory;
@@ -94,6 +95,11 @@ public final class PaperPathLayout implements PathLayoutPort {
 	@Override
 	public Path starterKitRecipientsFile() {
 		return this.dataDirectory.resolve(STARTER_KIT_RECIPIENTS_FILE_NAME);
+	}
+
+	@Override
+	public Path claimShowPreferencesFile() {
+		return this.dataDirectory.resolve(CLAIM_SHOW_PREFERENCES_FILE_NAME);
 	}
 
 	@Override

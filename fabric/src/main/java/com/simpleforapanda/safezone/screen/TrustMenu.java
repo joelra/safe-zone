@@ -33,21 +33,22 @@ import java.util.UUID;
 public class TrustMenu extends AbstractContainerMenu {
 	private static final int ROWS = 6;
 	private static final int TOTAL_SLOT_COUNT = ROWS * 9;
+	// Row 0: trusted section header
+	private static final int MAX_TRUSTED_ROWS = 2;
+	private static final int TRUSTED_CONTENT_START = 9;
+	private static final int TRUSTED_CONTENT_END = TRUSTED_CONTENT_START + MAX_TRUSTED_ROWS * 9; // 27
+	private static final int UNTRUSTED_HEADER_START = TRUSTED_CONTENT_END; // 27
+	private static final int UNTRUSTED_CONTENT_START = UNTRUSTED_HEADER_START + 9; // 36
 	private static final int NAV_ROW_START = 45;
+	private static final int UNTRUSTED_AVAILABLE_SLOTS = NAV_ROW_START - UNTRUSTED_CONTENT_START; // 9
 	private static final int PREVIOUS_PAGE_SLOT = 45;
 	private static final int PAGE_INFO_SLOT = 49;
 	private static final int NEXT_PAGE_SLOT = 53;
-	// Trusted section: row 0 is the header, rows 1..MAX_TRUSTED_ROWS hold heads.
-	// Two rows = 18 trusted slots, generous for most servers.
-	// Overflow is shown as "+N more" in the header rather than paginating.
-	private static final int MAX_TRUSTED_ROWS = 2;
 
 	private final String claimId;
 	private final ServerPlayer owner;
 	private final ClaimManager claimManager;
 	private final SimpleContainer trustContainer;
-	// Maps container slot index → TrustEntry for click routing.
-	// Rebuilt on every refresh. Non-clickable slots (headers, nav) are absent.
 	private Map<Integer, TrustEntry> slotToEntry = Map.of();
 	private int untrustedPage;
 	private int untrustedPageCount = 1;
@@ -85,6 +86,7 @@ public class TrustMenu extends AbstractContainerMenu {
 		if (clickType != ClickType.PICKUP) {
 			return;
 		}
+
 		if (slotIndex < 0) {
 			return;
 		}
@@ -140,17 +142,20 @@ public class TrustMenu extends AbstractContainerMenu {
 			return;
 		}
 
-		// Build full entry list
+		// Collect all entries (online players + offline trusted)
 		Map<UUID, TrustEntry> entriesById = new LinkedHashMap<>();
-		List<ServerPlayer> onlinePlayers = server.getPlayerList().getPlayers().stream()
-			.filter(p -> !p.getUUID().equals(claimOwnerId))
+		List<ServerPlayer> players = server.getPlayerList().getPlayers().stream()
+			.filter(player -> !player.getUUID().equals(claimOwnerId))
 			.toList();
 
-		for (ServerPlayer p : onlinePlayers) {
-			boolean trusted = claimData.isTrusted(p.getUUID());
-			entriesById.put(p.getUUID(), new TrustEntry(
-				p.getUUID(), p.getName().getString(), trusted, true,
-				buildPlayerHead(p.getGameProfile(), p.getName().getString(), trusted, true)));
+		for (ServerPlayer player : players) {
+			boolean trusted = claimData.isTrusted(player.getUUID());
+			entriesById.put(player.getUUID(), new TrustEntry(
+				player.getUUID(),
+				player.getName().getString(),
+				trusted,
+				true,
+				player.getGameProfile()));
 		}
 
 		for (String trustedPlayerId : claimData.trusted) {
@@ -158,33 +163,28 @@ public class TrustMenu extends AbstractContainerMenu {
 			if (playerId.equals(claimOwnerId) || entriesById.containsKey(playerId)) {
 				continue;
 			}
+
 			String playerName = claimData.getTrustedName(trustedPlayerId);
 			if (playerName == null || playerName.isBlank()) {
 				playerName = playerId.toString();
 			}
-			entriesById.put(playerId, new TrustEntry(
-				playerId, playerName, true, false,
-				buildPlayerHead(new GameProfile(playerId, playerName), playerName, true, false)));
+
+			entriesById.put(playerId, new TrustEntry(playerId, playerName, true, false,
+				new GameProfile(playerId, playerName)));
 		}
 
-		List<TrustEntry> allEntries = entriesById.values().stream()
+		List<TrustEntry> sorted = entriesById.values().stream()
 			.sorted(Comparator.comparing(TrustEntry::trusted).reversed()
 				.thenComparing(TrustEntry::online).reversed()
 				.thenComparing(TrustEntry::playerName, String.CASE_INSENSITIVE_ORDER))
 			.toList();
 
-		List<TrustEntry> trusted = allEntries.stream().filter(TrustEntry::trusted).toList();
-		List<TrustEntry> untrusted = allEntries.stream().filter(e -> !e.trusted()).toList();
+		List<TrustEntry> trusted = sorted.stream().filter(TrustEntry::trusted).toList();
+		List<TrustEntry> untrusted = sorted.stream().filter(e -> !e.trusted()).toList();
 
-		// --- Layout ---
-		// Row 0:                  trusted section header (lime glass panes)
-		// Rows 1..trustedRows:    trusted player heads
-		// Row trustedRows+1:      untrusted section header (gray glass panes)
-		// Rows trustedRows+2..4:  untrusted player heads
-		// Row 5 (slots 45-53):    navigation
+		// Section sizing
 		int trustedRows = Math.min(MAX_TRUSTED_ROWS, Math.max(1, (trusted.size() + 8) / 9));
-		int trustedContentStart = 9;
-		int trustedContentEnd = trustedContentStart + trustedRows * 9;
+		int trustedContentEnd = TRUSTED_CONTENT_START + trustedRows * 9;
 		int untrustedHeaderStart = trustedContentEnd;
 		int untrustedContentStart = untrustedHeaderStart + 9;
 		int untrustedAvailableSlots = NAV_ROW_START - untrustedContentStart;
@@ -195,10 +195,10 @@ public class TrustMenu extends AbstractContainerMenu {
 		this.untrustedPageCount = Math.max(1, (untrusted.size() + untrustedAvailableSlots - 1) / untrustedAvailableSlots);
 		this.untrustedPage = Math.max(0, Math.min(this.untrustedPage, this.untrustedPageCount - 1));
 
-		// --- Build slot→entry map ---
-		Map<Integer, TrustEntry> slotMap = new HashMap<>();
+		// Build slot→entry map
+		Map<Integer, TrustEntry> newSlotToEntry = new HashMap<>();
 		for (int i = 0; i < visibleTrustedCount; i++) {
-			slotMap.put(trustedContentStart + i, trusted.get(i));
+			newSlotToEntry.put(TRUSTED_CONTENT_START + i, trusted.get(i));
 		}
 		int untrustedOffset = this.untrustedPage * untrustedAvailableSlots;
 		for (int i = 0; i < untrustedAvailableSlots; i++) {
@@ -206,105 +206,62 @@ public class TrustMenu extends AbstractContainerMenu {
 			if (idx >= untrusted.size()) {
 				break;
 			}
-			slotMap.put(untrustedContentStart + i, untrusted.get(idx));
+			newSlotToEntry.put(untrustedContentStart + i, untrusted.get(idx));
 		}
-		this.slotToEntry = Map.copyOf(slotMap);
+		this.slotToEntry = Map.copyOf(newSlotToEntry);
 
-		// --- Render: clear all content slots ---
+		// Clear all content slots
 		for (int slot = 0; slot < TOTAL_SLOT_COUNT; slot++) {
 			this.trustContainer.setItem(slot, ItemStack.EMPTY);
 		}
 
-		// Trusted section header (row 0)
+		// Trusted section header (row 0, slots 0-8)
 		String trustedLabel = trustedOverflow
 			? "Trusted Players (+" + (trusted.size() - visibleTrustedCount) + " more)"
 			: "Trusted Players";
 		renderSectionHeader(0, Items.LIME_STAINED_GLASS_PANE, ChatFormatting.GREEN, trustedLabel);
 
 		// Trusted player heads
-		for (var e : this.slotToEntry.entrySet()) {
+		for (Map.Entry<Integer, TrustEntry> e : this.slotToEntry.entrySet()) {
 			int slot = e.getKey();
-			if (slot >= trustedContentStart && slot < trustedContentEnd) {
-				this.trustContainer.setItem(slot, e.getValue().displayStack().copy());
+			if (slot >= TRUSTED_CONTENT_START && slot < trustedContentEnd) {
+				this.trustContainer.setItem(slot, buildPlayerHead(e.getValue()));
 			}
 		}
 
 		// Untrusted section header
-		String untrustedLabel = untrusted.isEmpty()
-			? "Other Players"
-			: "Other Players (" + untrusted.size() + ")";
+		String untrustedLabel = untrusted.isEmpty() ? "Other Players" : "Other Players (" + untrusted.size() + ")";
 		renderSectionHeader(untrustedHeaderStart, Items.GRAY_STAINED_GLASS_PANE, ChatFormatting.GRAY, untrustedLabel);
 
 		// Untrusted player heads
-		for (var e : this.slotToEntry.entrySet()) {
+		for (Map.Entry<Integer, TrustEntry> e : this.slotToEntry.entrySet()) {
 			int slot = e.getKey();
 			if (slot >= untrustedContentStart) {
-				this.trustContainer.setItem(slot, e.getValue().displayStack().copy());
+				this.trustContainer.setItem(slot, buildPlayerHead(e.getValue()));
 			}
 		}
 
 		// Navigation row
+		this.trustContainer.setItem(PAGE_INFO_SLOT,
+			createPageInfoItem(claimData, trusted.size(), untrusted.size()));
 		this.trustContainer.setItem(PREVIOUS_PAGE_SLOT,
 			this.untrustedPage > 0 ? createNavigationItem(Items.ARROW, "Previous Page", "Go to the previous page") : ItemStack.EMPTY);
-		this.trustContainer.setItem(PAGE_INFO_SLOT, createPageInfoItem(trusted.size(), untrusted.size()));
 		this.trustContainer.setItem(NEXT_PAGE_SLOT,
 			this.untrustedPage + 1 < this.untrustedPageCount ? createNavigationItem(Items.ARROW, "Next Page", "Go to the next page") : ItemStack.EMPTY);
 
 		this.broadcastFullState();
 	}
 
-	private void renderSectionHeader(int startSlot, net.minecraft.world.item.Item pane,
-			ChatFormatting labelColor, String label) {
+	private void renderSectionHeader(int startSlot, net.minecraft.world.item.Item pane, ChatFormatting labelColor, String label) {
 		for (int col = 0; col < 9; col++) {
 			int slot = startSlot + col;
 			ItemStack stack = new ItemStack(pane);
 			Component name = col == 4
 				? Component.literal(label).withStyle(labelColor)
-				: Component.literal(" ");
+				: Component.literal(" ").withStyle(ChatFormatting.WHITE);
 			stack.set(DataComponents.CUSTOM_NAME, name);
 			this.trustContainer.setItem(slot, stack);
 		}
-	}
-
-	private ItemStack createPageInfoItem(int trustedCount, int untrustedCount) {
-		ItemStack info = new ItemStack(Items.PAPER);
-		info.set(DataComponents.CUSTOM_NAME, Component.literal(SafeZoneText.TRUST_MENU_INFO_TITLE).withStyle(ChatFormatting.GOLD));
-		List<Component> lore = new ArrayList<>();
-		lore.add(Component.literal(SafeZoneText.trustMenuClaimLine(this.claimId)).withStyle(ChatFormatting.YELLOW));
-		lore.add(Component.literal(SafeZoneText.TRUST_MENU_INFO_HINT).withStyle(ChatFormatting.GRAY));
-		lore.add(Component.literal(trustedCount + " trusted, " + untrustedCount + " other players").withStyle(ChatFormatting.DARK_GRAY));
-		if (this.untrustedPageCount > 1) {
-			lore.add(Component.literal("Other players: page " + (this.untrustedPage + 1) + " / " + this.untrustedPageCount)
-				.withStyle(ChatFormatting.BLUE));
-		}
-		info.set(DataComponents.LORE, new ItemLore(lore));
-		return info;
-	}
-
-	private static ItemStack createNavigationItem(net.minecraft.world.item.Item item, String title, String description) {
-		ItemStack stack = new ItemStack(item);
-		stack.set(DataComponents.CUSTOM_NAME, Component.literal(title).withStyle(ChatFormatting.YELLOW));
-		stack.set(DataComponents.LORE, new ItemLore(List.of(Component.literal(description).withStyle(ChatFormatting.GRAY))));
-		return stack;
-	}
-
-	private static ItemStack buildPlayerHead(GameProfile profile, String playerName, boolean trusted, boolean online) {
-		ItemStack skull = new ItemStack(Items.PLAYER_HEAD);
-		skull.set(DataComponents.PROFILE, ResolvableProfile.createResolved(profile));
-		skull.set(DataComponents.CUSTOM_NAME,
-			Component.literal(playerName).withStyle(trusted ? ChatFormatting.GREEN : ChatFormatting.GRAY));
-		skull.set(DataComponents.LORE, new ItemLore(List.of(
-			Component.literal(SafeZoneText.trustMenuPlayerStatus(trusted))
-				.withStyle(trusted ? ChatFormatting.GREEN : ChatFormatting.GRAY),
-			Component.literal(SafeZoneText.trustMenuPlayerAction(trusted))
-				.withStyle(ChatFormatting.YELLOW),
-			Component.literal(SafeZoneText.trustMenuSeenStatus(online))
-				.withStyle(ChatFormatting.BLUE)
-		)));
-		if (trusted) {
-			skull.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
-		}
-		return skull;
 	}
 
 	private void addPlayerInventory(Inventory playerInventory) {
@@ -320,6 +277,46 @@ public class TrustMenu extends AbstractContainerMenu {
 		}
 	}
 
-	private record TrustEntry(UUID playerId, String playerName, boolean trusted, boolean online, ItemStack displayStack) {
+	private ItemStack createPageInfoItem(ClaimData claim, int trustedCount, int untrustedCount) {
+		ItemStack info = new ItemStack(Items.PAPER);
+		info.set(DataComponents.CUSTOM_NAME, Component.literal(SafeZoneText.TRUST_MENU_INFO_TITLE).withStyle(ChatFormatting.GOLD));
+		List<Component> lore = new ArrayList<>();
+		lore.add(Component.literal(SafeZoneText.trustMenuClaimLine(claim.claimId)).withStyle(ChatFormatting.YELLOW));
+		lore.add(Component.literal(SafeZoneText.TRUST_MENU_INFO_HINT).withStyle(ChatFormatting.GRAY));
+		lore.add(Component.literal(trustedCount + " trusted, " + untrustedCount + " other players").withStyle(ChatFormatting.DARK_GRAY));
+		if (this.untrustedPageCount > 1) {
+			lore.add(Component.literal("Other players: page " + (this.untrustedPage + 1) + " / " + this.untrustedPageCount).withStyle(ChatFormatting.BLUE));
+		}
+		info.set(DataComponents.LORE, new ItemLore(lore));
+		return info;
+	}
+
+	private static ItemStack createNavigationItem(net.minecraft.world.item.Item item, String title, String description) {
+		ItemStack stack = new ItemStack(item);
+		stack.set(DataComponents.CUSTOM_NAME, Component.literal(title).withStyle(ChatFormatting.YELLOW));
+		stack.set(DataComponents.LORE, new ItemLore(List.of(Component.literal(description).withStyle(ChatFormatting.GRAY))));
+		return stack;
+	}
+
+	private static ItemStack buildPlayerHead(TrustEntry entry) {
+		ItemStack skull = new ItemStack(Items.PLAYER_HEAD);
+		skull.set(DataComponents.PROFILE, ResolvableProfile.createResolved(entry.profile()));
+		skull.set(DataComponents.CUSTOM_NAME,
+			Component.literal(entry.playerName()).withStyle(entry.trusted() ? ChatFormatting.GREEN : ChatFormatting.GRAY));
+		skull.set(DataComponents.LORE, new ItemLore(List.of(
+			Component.literal(SafeZoneText.trustMenuPlayerStatus(entry.trusted()))
+				.withStyle(entry.trusted() ? ChatFormatting.GREEN : ChatFormatting.GRAY),
+			Component.literal(SafeZoneText.trustMenuPlayerAction(entry.trusted()))
+				.withStyle(ChatFormatting.YELLOW),
+			Component.literal(SafeZoneText.trustMenuSeenStatus(entry.online()))
+				.withStyle(ChatFormatting.BLUE)
+		)));
+		if (entry.trusted()) {
+			skull.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+		}
+		return skull;
+	}
+
+	private record TrustEntry(UUID playerId, String playerName, boolean trusted, boolean online, GameProfile profile) {
 	}
 }

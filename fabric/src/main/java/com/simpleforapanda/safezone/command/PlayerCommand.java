@@ -76,7 +76,8 @@ public final class PlayerCommand {
 			.then(Commands.literal("remove")
 				.then(Commands.argument("claimId", StringArgumentType.word())
 					.suggests(suggestionHelper::suggestOwnedClaimIds)
-					.executes(PlayerCommand::executeRemove)));
+					.executes(PlayerCommand::executeRemove)))
+			.then(Commands.literal("show").executes(PlayerCommand::executeShow));
 	}
 
 	private static int executeHelp(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -107,6 +108,9 @@ public final class PlayerCommand {
 		source.sendSuccess(() -> CommandTextHelper.commandEntry(
 			CommandTextHelper.suggestButton("REMOVE", "/claim remove ", ChatFormatting.RED, "Fill a removal command for one of your claim IDs"),
 			"Fill a remove command. You must repeat it to confirm."), false);
+		source.sendSuccess(() -> CommandTextHelper.commandEntry(
+			CommandTextHelper.runButton("SHOW", "/claim show", ChatFormatting.LIGHT_PURPLE, "Toggle always-on claim boundary display"),
+			"Toggle persistent outline display for your claims."), false);
 		source.sendSuccess(CommandTextHelper::spacer, false);
 		source.sendSuccess(() -> CommandTextHelper.subtitle(SafeZoneText.PLAYER_HELP_TIP), false);
 		return Command.SINGLE_SUCCESS;
@@ -121,6 +125,17 @@ public final class PlayerCommand {
 		context.getSource().sendSuccess(() -> CommandTextHelper.detailLine("Owned claims", ownedClaims + "/" + maxClaims), false);
 		context.getSource().sendSuccess(() -> CommandTextHelper.detailLine("Trusted claims", String.valueOf(trustedClaims)), false);
 		context.getSource().sendSuccess(() -> CommandTextHelper.detailLine("Claim wand", claimWandHandler.wandName()), false);
+		return Command.SINGLE_SUCCESS;
+	}
+
+	private static int executeShow(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+		ServerPlayer player = context.getSource().getPlayerOrException();
+		boolean enabled = claimManager.toggleClaimShow(player.getUUID());
+		String status = enabled ? "ON" : "OFF";
+		context.getSource().sendSuccess(() ->
+			net.minecraft.network.chat.Component.literal("Claim outlines: ").withStyle(ChatFormatting.GRAY)
+				.append(net.minecraft.network.chat.Component.literal(status).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.RED)),
+			false);
 		return Command.SINGLE_SUCCESS;
 	}
 

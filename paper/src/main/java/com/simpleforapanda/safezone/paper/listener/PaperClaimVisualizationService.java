@@ -12,10 +12,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.World;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
@@ -41,7 +38,6 @@ import static net.kyori.adventure.text.format.NamedTextColor.RED;
 import static net.kyori.adventure.text.format.NamedTextColor.YELLOW;
 
 public final class PaperClaimVisualizationService implements Listener {
-	private static final NamespacedKey WAND_REACH_KEY = new NamespacedKey("safe-zone", "wand_reach");
 	private static final int VISUAL_TICK_INTERVAL = 8;
 	private static final int LOCAL_VERTICAL_SEARCH = 6;
 
@@ -89,43 +85,15 @@ public final class PaperClaimVisualizationService implements Listener {
 	}
 
 	public void clearPlayer(Player player) {
-		removeWandReach(player);
 		this.activeConfirmations.remove(player.getUniqueId());
 		applyPreview(player, Map.of());
 	}
 
 	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent event) {
-		removeWandReach(event.getPlayer());
 		UUID playerId = event.getPlayer().getUniqueId();
 		this.activePreviews.remove(playerId);
 		this.activeConfirmations.remove(playerId);
-	}
-
-	private void applyWandReach(Player player, SafeZoneConfig config) {
-		var attr = player.getAttribute(Attribute.BLOCK_INTERACTION_RANGE);
-		if (attr == null) return;
-		double range = config.gameplay.effectiveWandSelectionRange();
-		double delta = range - attr.getBaseValue();
-		if (delta <= 0) {
-			attr.removeModifier(WAND_REACH_KEY);
-			return;
-		}
-		for (AttributeModifier mod : attr.getModifiers()) {
-			if (mod.getKey().equals(WAND_REACH_KEY)) {
-				if (mod.getAmount() == delta) return;
-				attr.removeModifier(WAND_REACH_KEY);
-				break;
-			}
-		}
-		attr.addModifier(new AttributeModifier(WAND_REACH_KEY, delta, AttributeModifier.Operation.ADD_NUMBER));
-	}
-
-	private static void removeWandReach(Player player) {
-		var attr = player.getAttribute(Attribute.BLOCK_INTERACTION_RANGE);
-		if (attr != null) {
-			attr.removeModifier(WAND_REACH_KEY);
-		}
 	}
 
 	private void tick() {
@@ -415,13 +383,21 @@ public final class PaperClaimVisualizationService implements Listener {
 	private void refreshPlayer(Player player, SafeZoneConfig config, PaperClaimStore claimStore) {
 		Map<PreviewBlockPos, BlockData> desiredPreview = new HashMap<>();
 		Component overlayMessage = null;
-		if (!PaperClaimWandSupport.isClaimWand(player.getInventory().getItemInMainHand(), config.gameplay)) {
+		boolean wandInMainHand = PaperClaimWandSupport.isClaimWand(player.getInventory().getItemInMainHand(), config.gameplay);
+		boolean wandInOffhand = PaperClaimWandSupport.isClaimWand(player.getInventory().getItemInOffHand(), config.gameplay);
+		boolean holdingWand = wandInMainHand || wandInOffhand;
+
+		if (!wandInMainHand) {
 			this.wandState.cancelIfNoLongerHoldingWand(player, config.gameplay);
-			removeWandReach(player);
+		}
+
+		if (!holdingWand) {
+			if (claimStore.isClaimShowEnabled(player.getUniqueId()) && claimStore.isClaimWorld(player.getWorld())) {
+				addAlwaysShowOutlines(desiredPreview, player, claimStore, config);
+			}
 			applyPreview(player, desiredPreview);
 			return;
 		}
-		applyWandReach(player, config);
 
 		// Consume any just-completed claim so it shows immediately for wandConfirmDisplaySeconds
 		this.wandState.takeConfirmation(player.getUniqueId()).ifPresent(claim ->
@@ -513,11 +489,50 @@ public final class PaperClaimVisualizationService implements Listener {
 					outlineStep);
 				overlayMessage = buildClaimOverlay(claim.get(), permission, pendingRemoval);
 			}
+
+			if (claimStore.isClaimShowEnabled(player.getUniqueId()) && claimStore.isClaimWorld(player.getWorld())) {
+				addAlwaysShowOutlines(desiredPreview, player, claimStore, config);
+			}
 		}
 
 		applyPreview(player, desiredPreview);
 		if (overlayMessage != null) {
 			player.sendActionBar(overlayMessage);
+		}
+	}
+
+	private static void addAlwaysShowOutlines(
+		Map<PreviewBlockPos, BlockData> desiredPreview,
+		Player player,
+		PaperClaimStore claimStore,
+		SafeZoneConfig config
+	) {
+		int outlineStep = config.gameplay.wandOutlineStep;
+		ClaimCoordinates playerCoords = new ClaimCoordinates(
+			player.getLocation().getBlockX(),
+			player.getLocation().getBlockY(),
+			player.getLocation().getBlockZ());
+		PreviewContext context = createPreviewContext(player, playerCoords);
+		int y = player.getLocation().getBlockY();
+		for (ClaimData claim : claimStore.getClaimsForOwner(player.getUniqueId())) {
+			addPreview(desiredPreview,
+				new ClaimCoordinates(claim.getMinX(), y, claim.getMinZ()),
+				new ClaimCoordinates(claim.getMaxX(), y, claim.getMaxZ()),
+				OWNER_EDGE,
+				PREVIEW_CORNER,
+				player.getWorld(),
+				context,
+				outlineStep);
+		}
+		for (ClaimData claim : claimStore.getClaimsTrustedFor(player.getUniqueId())) {
+			addPreview(desiredPreview,
+				new ClaimCoordinates(claim.getMinX(), y, claim.getMinZ()),
+				new ClaimCoordinates(claim.getMaxX(), y, claim.getMaxZ()),
+				TRUSTED_EDGE,
+				PREVIEW_CORNER,
+				player.getWorld(),
+				context,
+				outlineStep);
 		}
 	}
 

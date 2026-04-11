@@ -29,7 +29,7 @@ import static net.kyori.adventure.text.format.NamedTextColor.RED;
 import static net.kyori.adventure.text.format.NamedTextColor.YELLOW;
 
 public final class ClaimCommand implements CommandExecutor, TabCompleter {
-	private static final List<String> SUBCOMMANDS = List.of("help", "status", "here", "info", "list", "trusted", "trust", "remove");
+	private static final List<String> SUBCOMMANDS = List.of("help", "status", "here", "info", "list", "trusted", "trust", "remove", "show");
 	private static final Map<UUID, PendingClaimRemoval> PENDING_REMOVALS = new ConcurrentHashMap<>();
 
 	private final PaperRuntime runtime;
@@ -55,6 +55,7 @@ public final class ClaimCommand implements CommandExecutor, TabCompleter {
 			case "trusted" -> sendTrustedClaims(sender, parsePage(sender, args, 1));
 			case "trust" -> openTrustMenu(sender, args);
 			case "remove" -> removeOwnedClaim(sender, args);
+			case "show" -> toggleClaimShow(sender);
 			default -> sender.sendMessage(text(SafeZoneText.unknownSubcommand(label), RED));
 		}
 		return true;
@@ -218,6 +219,16 @@ public final class ClaimCommand implements CommandExecutor, TabCompleter {
 		}
 
 		sender.sendMessage(text(SafeZoneText.playerRemovedClaim(claimId), GREEN));
+	}
+
+	private void toggleClaimShow(CommandSender sender) {
+		Player player = requirePlayer(sender);
+		if (player == null) {
+			return;
+		}
+		boolean enabled = this.runtime.services().claimStore().toggleClaimShow(player.getUniqueId());
+		player.sendMessage(text("Claim outlines: ", GRAY)
+			.append(text(enabled ? "ON" : "OFF", enabled ? GREEN : RED)));
 	}
 
 	private void sendTrustedClaims(CommandSender sender, Integer page) {

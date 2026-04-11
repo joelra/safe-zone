@@ -47,7 +47,7 @@ public final class PaperTrustMenuService implements Listener {
 	private static final int PREVIOUS_PAGE_SLOT = 45;
 	private static final int PAGE_INFO_SLOT = 49;
 	private static final int NEXT_PAGE_SLOT = 53;
-	// Trusted section is always in rows 0 (header) + rows 1..MAX_TRUSTED_ROWS (heads).
+	// Trusted section is always in row 0 (header) + rows 1..MAX_TRUSTED_ROWS (heads).
 	// Two rows of trusted heads gives 18 slots, which is generous for most servers.
 	// If more players are trusted than fit, the header shows "+N more".
 	private static final int MAX_TRUSTED_ROWS = 2;
@@ -177,7 +177,7 @@ public final class PaperTrustMenuService implements Listener {
 		Inventory inventory = holder.getInventory();
 		inventory.clear();
 
-		// Trusted section header
+		// Trusted section header (row 0, slots 0-8)
 		String trustedLabel = trustedOverflow
 			? "Trusted Players (+" + (trusted.size() - visibleTrustedCount) + " more)"
 			: "Trusted Players";
@@ -212,7 +212,6 @@ public final class PaperTrustMenuService implements Listener {
 		if (holder.untrustedPage() + 1 < untrustedPageCount) {
 			inventory.setItem(NEXT_PAGE_SLOT, createNavigationItem(Material.ARROW, "Next Page", "Go to the next page"));
 		}
-
 		return true;
 	}
 
