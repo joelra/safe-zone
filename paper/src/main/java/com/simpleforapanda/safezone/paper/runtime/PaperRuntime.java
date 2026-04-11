@@ -1,6 +1,9 @@
 package com.simpleforapanda.safezone.paper.runtime;
 
 import com.simpleforapanda.safezone.data.SafeZoneConfig;
+import com.simpleforapanda.safezone.manager.PersistentStateHelper;
+import com.simpleforapanda.safezone.paper.integration.axiom.AxiomIntegration;
+import com.simpleforapanda.safezone.paper.integration.fawe.FaweIntegration;
 import com.simpleforapanda.safezone.paper.listener.PaperAdminInspectService;
 import com.simpleforapanda.safezone.paper.listener.PaperClaimVisualizationService;
 import com.simpleforapanda.safezone.paper.listener.PaperClaimWandListener;
@@ -10,6 +13,7 @@ import com.simpleforapanda.safezone.paper.listener.PaperProtectionListener;
 import com.simpleforapanda.safezone.paper.listener.PaperStarterKitListener;
 import com.simpleforapanda.safezone.paper.protection.PaperRideableEntityClassifier;
 import com.simpleforapanda.safezone.paper.ui.PaperTrustMenuService;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class PaperRuntime {
@@ -18,6 +22,7 @@ public final class PaperRuntime {
 	private final PaperCommandRegistrar commandRegistrar;
 	private final PaperClaimVisualizationService claimVisualizationService;
 	private final PaperClaimWandListener claimWandListener;
+	private FaweIntegration faweIntegration;
 
 	private PaperRuntime(PaperPluginContext context) {
 		this.context = context;
@@ -45,6 +50,10 @@ public final class PaperRuntime {
 
 	public void start() {
 		this.context.paths().ensureDirectories();
+		PersistentStateHelper.cleanupStaleTempFile(this.context.paths().claimsFile());
+		PersistentStateHelper.cleanupStaleTempFile(this.context.paths().playerLimitsFile());
+		PersistentStateHelper.cleanupStaleTempFile(this.context.paths().starterKitRecipientsFile());
+		PersistentStateHelper.cleanupStaleTempFile(this.context.paths().notificationsFile());
 		this.services.configService().load();
 		this.services.auditLogger().load();
 		SafeZoneConfig config = this.services.configService().current();
@@ -60,6 +69,18 @@ public final class PaperRuntime {
 		this.context.plugin().getServer().getPluginManager().registerEvents(new PaperEntityProtectionListener(this), this.context.plugin());
 		this.context.plugin().getServer().getPluginManager().registerEvents(this.services.trustMenuService(), this.context.plugin());
 		this.claimVisualizationService.start();
+		// Check for Axiom/FAWE with pure Bukkit before referencing their integration
+		// classes. Both classes import plugin API types; loading them before the plugin
+		// is confirmed present risks a NoClassDefFoundError on servers without Axiom/FAWE.
+		if (Bukkit.getPluginManager().isPluginEnabled("AxiomPaper")) {
+			AxiomIntegration.register(this.context.plugin(), this.services.claimStore());
+		}
+		// FaweIntegration has WorldEdit types in method signatures; loading it before
+		// confirming the dependency is present risks a NoClassDefFoundError.
+		if (Bukkit.getPluginManager().isPluginEnabled("FastAsyncWorldEdit")
+				|| Bukkit.getPluginManager().isPluginEnabled("WorldEdit")) {
+			this.faweIntegration = FaweIntegration.register(this.context.plugin(), this.services.claimStore());
+		}
 		this.context.logger().info("Safe Zone Paper runtime enabled at " + this.context.paths().pluginDirectory());
 	}
 
@@ -67,11 +88,21 @@ public final class PaperRuntime {
 		SafeZoneConfig config = this.services.configService().current();
 		this.services.adminInspectService().clear();
 		this.claimVisualizationService.stop();
+		unregisterFawe();
 		this.services.claimStore().save();
 		this.services.notificationStore().save(config);
 		this.services.configService().save();
 		this.services.auditLogger().unload();
 		this.context.logger().info("Safe Zone Paper runtime disabled");
+	}
+
+	// Isolated so that FaweIntegration (which references WorldEdit types) is only
+	// resolved by the JVM when this method is actually called — which only happens
+	// when faweIntegration is non-null, meaning FAWE was confirmed present at startup.
+	private void unregisterFawe() {
+		if (this.faweIntegration != null) {
+			this.faweIntegration.unregister();
+		}
 	}
 
 	public void reload() {

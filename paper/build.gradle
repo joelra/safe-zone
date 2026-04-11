@@ -1,11 +1,49 @@
+import xyz.jpenilla.runpaper.task.RunServer
+
 plugins {
 	id 'java'
 	id 'xyz.jpenilla.run-paper' version '3.0.2'
 }
 
+sourceSets {
+	axiomStubs {
+		java { srcDir 'src/axiomStubs/java' }
+	}
+	main {
+		compileClasspath += sourceSets.axiomStubs.output
+	}
+}
+
+configurations.all {
+	// WorldEdit declares {strictly} version constraints for several Mojang-bundled libraries.
+	// These conflict with the versions that Paper API (and the common module) require at
+	// build time. Since worldedit-bukkit is compile-only, override the strict constraints
+	// so that the two compile-only dependencies can coexist during compilation.
+	resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+		if (details.requested.group == 'org.apache.logging.log4j' && details.requested.name == 'log4j-bom') {
+			details.useVersion('2.24.1')
+			details.because('WorldEdit {strictly 2.22.1} conflicts with FAWE 2.24.1; overridden for compile-only use — Paper provides Log4j at runtime')
+		} else if (details.requested.group == 'it.unimi.dsi' && details.requested.name == 'fastutil') {
+			details.useVersion('8.5.15')
+			details.because('Paper API requires fastutil 8.5.15; WorldEdit/FAWE strict constraint overridden for compile-only use')
+		} else if (details.requested.group == 'com.google.guava' && details.requested.name == 'guava') {
+			details.useVersion('33.3.1-jre')
+			details.because('Paper API requires guava 33.3.1-jre; WorldEdit/FAWE strict constraint overridden for compile-only use')
+		} else if (details.requested.group == 'com.google.code.gson' && details.requested.name == 'gson') {
+			details.useVersion('2.13.2')
+			details.because('common module requires gson 2.13.2; WorldEdit/FAWE strict constraint overridden for compile-only use')
+		}
+	}
+}
+
 dependencies {
 	implementation project(':common')
 	compileOnly 'io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT'
+	compileOnly 'com.sk89q.worldedit:worldedit-bukkit:7.3.9'
+	compileOnly 'com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit:2.15.0'
+	// axiomStubs only needs Paper API — avoid pulling in WorldEdit's strict
+	// fastutil version constraint which conflicts with Paper's requirement.
+	axiomStubsCompileOnly 'io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT'
 }
 
 processResources {
@@ -35,6 +73,21 @@ tasks.named('runServer') {
 	minecraftVersion(project.findProperty('minecraft_version').toString())
 	runDirectory = rootProject.layout.projectDirectory.dir('run/paper')
 	workingDir = rootProject.file('run/paper')
+	downloadPlugins {
+		// Axiom Paper Plugin 5.0.3+1.21.11
+		modrinth('axiom-paper-plugin', '6caOwLe6')
+		// FastAsyncWorldEdit 2.15.0
+		github('IntellectualSites', 'FastAsyncWorldEdit', '2.15.0', 'FastAsyncWorldEdit-Paper-2.15.0.jar')
+		// LuckPerms v5.5.17 -- needed to test per-player permission scenarios (e.g. safezone.axiom without safezone.command.admin)
+		modrinth('luckperms', 'OrIs0S6b')
+	}
+}
+
+tasks.register('runServerCore', RunServer) {
+	minecraftVersion(project.findProperty('minecraft_version').toString())
+	runDirectory = rootProject.layout.projectDirectory.dir('run/paper-core')
+	workingDir = rootProject.file('run/paper-core')
+	pluginJars(tasks.named('jar'))
 }
 
 jar {

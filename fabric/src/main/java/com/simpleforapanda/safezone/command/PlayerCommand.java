@@ -195,6 +195,7 @@ public final class PlayerCommand {
 			throw CLAIM_NOT_FOUND.create();
 		}
 
+		claimWandHandler.clearPlayer(player.getUUID());
 		auditLogger.logPlayerAction(player.getName().getString(), "REMOVE", claim.claimId, "owner=" + claim.ownerName);
 		context.getSource().sendSuccess(() -> CommandTextHelper.statusLine("REMOVED", ChatFormatting.RED,
 			SafeZoneText.playerRemovedClaim(claim.claimId)), true);

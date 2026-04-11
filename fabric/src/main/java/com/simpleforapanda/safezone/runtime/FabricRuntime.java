@@ -2,6 +2,8 @@ package com.simpleforapanda.safezone.runtime;
 
 import com.simpleforapanda.safezone.data.GameplayConfig;
 import com.simpleforapanda.safezone.manager.ClaimExpiryRefreshResult;
+import com.simpleforapanda.safezone.manager.FabricPathLayout;
+import com.simpleforapanda.safezone.manager.PersistentStateHelper;
 import com.simpleforapanda.safezone.manager.PlayerMessageHelper;
 import com.simpleforapanda.safezone.manager.TitleMessageHelper;
 import com.simpleforapanda.safezone.text.SafeZoneText;
@@ -21,6 +23,11 @@ public final class FabricRuntime {
 	}
 
 	public void start(MinecraftServer server) {
+		FabricPathLayout paths = FabricPathLayout.fromServer(server);
+		PersistentStateHelper.cleanupStaleTempFile(paths.claimsFile());
+		PersistentStateHelper.cleanupStaleTempFile(paths.playerLimitsFile());
+		PersistentStateHelper.cleanupStaleTempFile(paths.starterKitRecipientsFile());
+		PersistentStateHelper.cleanupStaleTempFile(paths.notificationsFile());
 		this.services.configManager().load(server);
 		this.services.claimManager().load(server);
 		this.services.notificationManager().load(server);

@@ -40,6 +40,7 @@ Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 1.21.11**. 
 | Java | `21+` |
 | Fabric build | Fabric Loader + Fabric API |
 | Paper build | Paper `1.21.11` |
+| Optional Paper integrations | Axiom Paper Plugin, FastAsyncWorldEdit, or WorldEdit |
 | Client requirement | None for the current core feature set |
 
 ## Install
@@ -57,7 +58,20 @@ Choose the build that matches your server software.
 
 1. Install a compatible Paper server.
 2. Put the Safe Zone **Paper jar** in `plugins\`.
-3. Start the server once to generate `plugins\SafeZone\`.
+3. Optional: install **AxiomPaperPlugin** and/or **FastAsyncWorldEdit** or **WorldEdit** if you want claim-restricted editor support on Paper.
+4. Start the server once to generate `plugins\SafeZone\`.
+
+#### FastAsyncWorldEdit setup (Paper only)
+
+Safe Zone registers a `FaweMaskManager` with FAWE so that every player edit session is automatically restricted to claims they own or are trusted in. This requires enabling FAWE's region-restriction framework in `FastAsyncWorldEdit/config.yml`:
+
+```yaml
+region-restrictions: true
+```
+
+With `region-restrictions: true`, FAWE consults Safe Zone (and any other registered protection plugins) before allowing block changes. Players without accessible claims cannot use WorldEdit at all. Admin players with `safezone.command.admin` bypass the restriction.
+
+If `region-restrictions` is left as `false` (the FAWE default), FAWE skips all mask managers and Safe Zone's WorldEdit restrictions will have no effect.
 
 ## Player quick start
 
@@ -77,6 +91,7 @@ Choose the build that matches your server software.
 | In-world claiming | Claim creation, resizing, and removal without custom client-side items |
 | Access management | Owner/trusted/admin-bypass permission model with a vanilla-compatible trust menu |
 | Staff moderation | Claim lookup, transfer, trust changes, removals, limits, reloads, and wand recovery |
+| Paper integrations | Optional Axiom and FAWE/WorldEdit claim-restricted editing on Paper |
 | Shared behavior | Consistent rules, persistence behavior, and claim logic across Fabric and Paper |
 
 <details>
@@ -109,6 +124,16 @@ Choose the build that matches your server software.
 - Claim limit overrides
 - Config/data reload support
 - Audit log and offline admin notification support
+
+</details>
+
+<details>
+  <summary><strong>Optional Paper integrations</strong></summary>
+
+- **Axiom Paper Plugin:** players with `safezone.axiom` can connect with Axiom, and block edits are restricted to claims they own or are trusted in
+- **FastAsyncWorldEdit / WorldEdit:** player edit sessions are restricted to claims they own or are trusted in
+- **Admin bypass:** players with `safezone.command.admin` bypass those edit restrictions
+- These integrations are **Paper-only** and are inactive unless the corresponding plugin is installed
 
 </details>
 
@@ -207,6 +232,7 @@ Choose the build that matches your server software.
 | `notificationRetentionDays` | `30` | Integer `>= 1` | How long queued offline notices are kept before pruning |
 | `wandRemoveConfirmSeconds` | `5` | Integer `>= 1` | Confirmation window for wand-based claim removal |
 | `commandRemoveConfirmSeconds` | `10` | Integer `>= 1` | Confirmation window for `/claim remove` |
+| `wandSelectionRangeBlocks` | `30` | Integer `>= 0` | Claim wand selection and preview range; `0` uses the maximum supported range |
 
 ### Ops settings
 
@@ -245,6 +271,8 @@ Safe Zone currently protects:
 - Paintings, item frames, minecarts, boats, and armor stands from explosion damage or movement
 - Trusted, owner, and admin-bypass players from explosion damage and knockback inside claims
 - Claim-wand interactions without hoe tilling or durability use
+- **Paper only:** Axiom editing inside owned/trusted claims when AxiomPaperPlugin is installed and the player has `safezone.axiom`
+- **Paper only:** FAWE / WorldEdit edit sessions inside owned/trusted claims when FastAsyncWorldEdit or WorldEdit is installed
 
 Not implemented yet:
 
@@ -255,6 +283,7 @@ Not implemented yet:
 ## Known limitations
 
 - **Paper corner preview:** after the second click for claim creation or resize, the gold corner block may not appear immediately until you move, re-enter the claim, or switch off and back onto the wand.
+- **FAWE "Operation completed" outside claims:** when a player's WorldEdit selection is entirely outside their claim areas, FAWE's region mask silently filters all block changes to zero — no blocks are modified — but FAWE still reports "Operation completed (N)". This is a limitation of FAWE's batch-level mask system, which cannot signal an early cancellation when a selection falls wholly outside allowed regions.
 
 ## Local development
 

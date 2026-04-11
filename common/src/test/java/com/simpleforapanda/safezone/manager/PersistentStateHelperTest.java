@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PersistentStateHelperTest {
@@ -93,6 +94,84 @@ class PersistentStateHelperTest {
 			PersistentStateHelper.JsonOutput.PRETTY);
 
 		assertEquals("{\n  \"value\": 2\n}", Files.readString(filePath, StandardCharsets.UTF_8));
+	}
+
+	// Crash-corruption resilience tests.
+	//
+	// On a hard crash (OOM kill, power loss), the OS page cache may not have been
+	// flushed. A file opened with TRUNCATE_EXISTING gets zero-filled blocks on disk
+	// even though the JVM wrote valid content to the page cache. The result is a data
+	// file (or its .tmp predecessor) full of null bytes.
+
+	@Test
+	void readJsonReturnsFallbackForNullByteDataFile() throws IOException {
+		Path filePath = createTestFilePath("player_limits.json");
+		Files.write(filePath, new byte[]{0, 0, 0, 0});
+
+		Map<String, Integer> result = PersistentStateHelper.readJson(filePath, MAP_TYPE, Map.of(), "test data", false);
+
+		assertEquals(Map.of(), result);
+	}
+
+	@Test
+	void readJsonReturnsFallbackForWhitespaceOnlyDataFile() throws IOException {
+		Path filePath = createTestFilePath("player_limits.json");
+		Files.writeString(filePath, "   \n\t  ", StandardCharsets.UTF_8);
+
+		Map<String, Integer> result = PersistentStateHelper.readJson(filePath, MAP_TYPE, Map.of(), "test data", false);
+
+		assertEquals(Map.of(), result);
+	}
+
+	@Test
+	void readJsonStillFailsForActuallyCorruptJson() throws IOException {
+		// Distinguishes "empty file" (safe to ignore) from genuinely corrupt data
+		// (should not silently discard, so the operator is alerted).
+		Path filePath = createTestFilePath("player_limits.json");
+		Files.writeString(filePath, "{truncated", StandardCharsets.UTF_8);
+
+		assertThrows(IllegalStateException.class,
+			() -> PersistentStateHelper.readJson(filePath, MAP_TYPE, Map.of(), "test data", false));
+	}
+
+	@Test
+	void cleanupStaleTempFileDeletesNullByteTempFile() throws IOException {
+		Path filePath = createTestFilePath("player_limits.json");
+		Path tempPath = filePath.resolveSibling("player_limits.json.tmp");
+		Files.write(tempPath, new byte[]{0, 0, 0, 0});
+
+		PersistentStateHelper.cleanupStaleTempFile(filePath);
+
+		assertFalse(Files.exists(tempPath));
+	}
+
+	@Test
+	void cleanupStaleTempFileIsNoOpWhenTempAbsent() throws IOException {
+		Path filePath = createTestFilePath("player_limits.json");
+
+		// Should not throw even when the .tmp does not exist
+		PersistentStateHelper.cleanupStaleTempFile(filePath);
+
+		assertFalse(Files.exists(filePath.resolveSibling("player_limits.json.tmp")));
+	}
+
+	@Test
+	void crashRecoveryFlowStaleTempPlusIntactDataFile() throws IOException {
+		// Simulates: crash happened mid-write (temp has null bytes), but the previous
+		// save of the real file completed successfully. On startup, cleanup removes the
+		// stale temp and the load reads the intact destination.
+		Path filePath = createTestFilePath("player_limits.json");
+		Path tempPath = filePath.resolveSibling("player_limits.json.tmp");
+
+		PersistentStateHelper.writeJsonAtomically(filePath, Map.of("uuid-a", 5), MAP_TYPE, "test data", false,
+			PersistentStateHelper.JsonOutput.COMPACT);
+		Files.write(tempPath, new byte[128]); // null bytes left by a crashed write
+
+		PersistentStateHelper.cleanupStaleTempFile(filePath);
+		Map<String, Integer> loaded = PersistentStateHelper.readJson(filePath, MAP_TYPE, Map.of(), "test data", false);
+
+		assertFalse(Files.exists(tempPath));
+		assertEquals(Map.of("uuid-a", 5), loaded);
 	}
 
 	private Path createTestFilePath(String fileName) throws IOException {

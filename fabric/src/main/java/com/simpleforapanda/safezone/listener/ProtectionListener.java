@@ -21,7 +21,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -34,6 +33,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
 
 import java.util.Map;
 import java.util.UUID;
@@ -168,14 +168,14 @@ public final class ProtectionListener {
 		}
 
 		double vanillaReach = player.blockInteractionRange();
-		net.minecraft.world.phys.HitResult vanillaHit = player.pick(vanillaReach, 0.0F, false);
+		HitResult vanillaHit = player.pick(vanillaReach, 0.0F, false);
 		if (vanillaHit.getType() == HitResult.Type.BLOCK) {
 			// Block is within vanilla reach — onUseBlock already handled this click.
 			return InteractionResult.SUCCESS;
 		}
 
 		int range = this.claimManager.getGameplayConfig().wandSelectionRangeBlocks;
-		net.minecraft.world.phys.HitResult hitResult = player.pick(range, 0.0F, false);
+		HitResult hitResult = player.pick(range, 0.0F, false);
 		if (hitResult instanceof BlockHitResult blockHit && hitResult.getType() == HitResult.Type.BLOCK) {
 			InteractionResult result = this.claimWandHandler.handleUseOn(serverPlayer, (net.minecraft.server.level.ServerLevel) level, blockHit.getBlockPos());
 			if (result == InteractionResult.SUCCESS) {

@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
@@ -68,12 +67,24 @@ public final class PersistentStateHelper {
 		}
 	}
 
+	public static void cleanupStaleTempFile(Path filePath) {
+		Path tempPath = tempPathFor(filePath);
+		try {
+			if (Files.deleteIfExists(tempPath)) {
+				LOGGER.warn("Deleted stale temp file {} — likely left by a previous crash.", tempPath);
+			}
+		} catch (IOException exception) {
+			LOGGER.warn("Failed to delete stale temp file {}.", tempPath, exception);
+		}
+	}
+
 	public static void writeJsonAtomically(Path filePath, Object value, Type type, String dataLabel, boolean createBackup,
 		JsonOutput jsonOutput) {
 		Path tempPath = tempPathFor(filePath);
 		try {
 			try (Writer writer = Files.newBufferedWriter(tempPath, StandardCharsets.UTF_8,
-				StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
+				StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE,
+				StandardOpenOption.DSYNC)) {
 				gsonFor(jsonOutput).toJson(value, type, writer);
 			}
 
@@ -105,10 +116,12 @@ public final class PersistentStateHelper {
 	}
 
 	private static <T> T readJsonFile(Path filePath, Type type, T fallback) throws IOException {
-		try (Reader reader = Files.newBufferedReader(filePath, StandardCharsets.UTF_8)) {
-			T value = READ_GSON.fromJson(reader, type);
-			return value == null ? fallback : value;
+		String content = Files.readString(filePath, StandardCharsets.UTF_8).replace("\0", "").strip();
+		if (content.isEmpty()) {
+			return fallback;
 		}
+		T value = READ_GSON.fromJson(content, type);
+		return value == null ? fallback : value;
 	}
 
 	private static void restoreBackup(Path targetPath, Path backupPath, String dataLabel) {
