@@ -255,19 +255,14 @@ public final class ClaimVisualizationManager {
 		Map<BlockPos, BlockState> previousPreview = this.activePreviews.getOrDefault(player.getUUID(), Map.of());
 
 		for (Map.Entry<BlockPos, BlockState> previousEntry : previousPreview.entrySet()) {
-			BlockPos pos = previousEntry.getKey();
-			BlockState desiredState = desiredPreview.get(pos);
-			if (desiredState == null) {
-				sendBlockUpdate(player, pos, player.level().getBlockState(pos));
-			} else if (!desiredState.equals(previousEntry.getValue())) {
-				sendBlockUpdate(player, pos, desiredState);
+			if (!desiredPreview.containsKey(previousEntry.getKey())) {
+				sendBlockUpdate(player, previousEntry.getKey(), player.level().getBlockState(previousEntry.getKey()));
 			}
 		}
 
+		// Always resend every desired block so chunk-load resets are corrected on the next tick.
 		for (Map.Entry<BlockPos, BlockState> desiredEntry : desiredPreview.entrySet()) {
-			if (!previousPreview.containsKey(desiredEntry.getKey())) {
-				sendBlockUpdate(player, desiredEntry.getKey(), desiredEntry.getValue());
-			}
+			sendBlockUpdate(player, desiredEntry.getKey(), desiredEntry.getValue());
 		}
 
 		if (desiredPreview.isEmpty()) {

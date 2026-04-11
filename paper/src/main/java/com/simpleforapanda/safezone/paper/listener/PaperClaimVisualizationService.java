@@ -181,19 +181,14 @@ public final class PaperClaimVisualizationService implements Listener {
 		Map<PreviewBlockPos, BlockData> previousPreview = this.activePreviews.getOrDefault(player.getUniqueId(), Map.of());
 
 		for (Map.Entry<PreviewBlockPos, BlockData> previousEntry : previousPreview.entrySet()) {
-			PreviewBlockPos pos = previousEntry.getKey();
-			BlockData desiredState = desiredPreview.get(pos);
-			if (desiredState == null) {
-				sendBlockChange(player, pos, actualBlockData(pos));
-			} else if (!desiredState.matches(previousEntry.getValue())) {
-				sendBlockChange(player, pos, desiredState);
+			if (!desiredPreview.containsKey(previousEntry.getKey())) {
+				sendBlockChange(player, previousEntry.getKey(), actualBlockData(previousEntry.getKey()));
 			}
 		}
 
+		// Always resend every desired block so chunk-load resets are corrected on the next tick.
 		for (Map.Entry<PreviewBlockPos, BlockData> desiredEntry : desiredPreview.entrySet()) {
-			if (!previousPreview.containsKey(desiredEntry.getKey())) {
-				sendBlockChange(player, desiredEntry.getKey(), desiredEntry.getValue());
-			}
+			sendBlockChange(player, desiredEntry.getKey(), desiredEntry.getValue());
 		}
 
 		if (desiredPreview.isEmpty()) {
