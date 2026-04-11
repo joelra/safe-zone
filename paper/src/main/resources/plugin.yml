@@ -30,7 +30,7 @@ permissions:
   safezone.axiom:
     description: >
       Allow the player to connect with the Axiom editor and use it inside
-      claims they own or are trusted in. Requires AxiomPaperPlugin to be
+      claims they own or are trusted in. Requires AxiomPaper to be
       installed. Players also need the standard Axiom permission (axiom.default)
       granted by their permission plugin.
     default: op
