@@ -124,6 +124,18 @@ public final class ClaimManager {
 		requireService().markStarterKitReceived(playerId);
 	}
 
+	public synchronized boolean isClaimShowEnabled(UUID playerId) {
+		return requireService().isClaimShowEnabled(playerId);
+	}
+
+	public synchronized boolean toggleClaimShow(UUID playerId) {
+		return requireService().toggleClaimShow(playerId);
+	}
+
+	public synchronized PermissionResult getPermission(ClaimData claim, UUID playerId, boolean adminBypass) {
+		return requireService().getPermission(claim, playerId, adminBypass);
+	}
+
 	public synchronized PermissionResult canBuild(ServerPlayer player, BlockPos pos) {
 		Optional<ClaimData> claim = getClaimAt(pos);
 		if (claim.isEmpty()) {

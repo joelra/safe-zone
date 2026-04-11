@@ -383,8 +383,18 @@ public final class PaperClaimVisualizationService implements Listener {
 	private void refreshPlayer(Player player, SafeZoneConfig config, PaperClaimStore claimStore) {
 		Map<PreviewBlockPos, BlockData> desiredPreview = new HashMap<>();
 		Component overlayMessage = null;
-		if (!PaperClaimWandSupport.isClaimWand(player.getInventory().getItemInMainHand(), config.gameplay)) {
+		boolean wandInMainHand = PaperClaimWandSupport.isClaimWand(player.getInventory().getItemInMainHand(), config.gameplay);
+		boolean wandInOffhand = PaperClaimWandSupport.isClaimWand(player.getInventory().getItemInOffHand(), config.gameplay);
+		boolean holdingWand = wandInMainHand || wandInOffhand;
+
+		if (!wandInMainHand) {
 			this.wandState.cancelIfNoLongerHoldingWand(player, config.gameplay);
+		}
+
+		if (!holdingWand) {
+			if (claimStore.isClaimShowEnabled(player.getUniqueId()) && claimStore.isClaimWorld(player.getWorld())) {
+				addAlwaysShowOutlines(desiredPreview, player, claimStore, config);
+			}
 			applyPreview(player, desiredPreview);
 			return;
 		}
@@ -479,11 +489,50 @@ public final class PaperClaimVisualizationService implements Listener {
 					outlineStep);
 				overlayMessage = buildClaimOverlay(claim.get(), permission, pendingRemoval);
 			}
+
+			if (claimStore.isClaimShowEnabled(player.getUniqueId()) && claimStore.isClaimWorld(player.getWorld())) {
+				addAlwaysShowOutlines(desiredPreview, player, claimStore, config);
+			}
 		}
 
 		applyPreview(player, desiredPreview);
 		if (overlayMessage != null) {
 			player.sendActionBar(overlayMessage);
+		}
+	}
+
+	private static void addAlwaysShowOutlines(
+		Map<PreviewBlockPos, BlockData> desiredPreview,
+		Player player,
+		PaperClaimStore claimStore,
+		SafeZoneConfig config
+	) {
+		int outlineStep = config.gameplay.wandOutlineStep;
+		ClaimCoordinates playerCoords = new ClaimCoordinates(
+			player.getLocation().getBlockX(),
+			player.getLocation().getBlockY(),
+			player.getLocation().getBlockZ());
+		PreviewContext context = createPreviewContext(player, playerCoords);
+		int y = player.getLocation().getBlockY();
+		for (ClaimData claim : claimStore.getClaimsForOwner(player.getUniqueId())) {
+			addPreview(desiredPreview,
+				new ClaimCoordinates(claim.getMinX(), y, claim.getMinZ()),
+				new ClaimCoordinates(claim.getMaxX(), y, claim.getMaxZ()),
+				OWNER_EDGE,
+				PREVIEW_CORNER,
+				player.getWorld(),
+				context,
+				outlineStep);
+		}
+		for (ClaimData claim : claimStore.getClaimsTrustedFor(player.getUniqueId())) {
+			addPreview(desiredPreview,
+				new ClaimCoordinates(claim.getMinX(), y, claim.getMinZ()),
+				new ClaimCoordinates(claim.getMaxX(), y, claim.getMaxZ()),
+				TRUSTED_EDGE,
+				PREVIEW_CORNER,
+				player.getWorld(),
+				context,
+				outlineStep);
 		}
 	}
 

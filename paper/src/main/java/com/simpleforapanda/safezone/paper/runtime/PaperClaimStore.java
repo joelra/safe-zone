@@ -115,6 +115,14 @@ public final class PaperClaimStore {
 		this.service.markStarterKitReceived(playerId);
 	}
 
+	public synchronized boolean isClaimShowEnabled(UUID playerId) {
+		return this.service.isClaimShowEnabled(playerId);
+	}
+
+	public synchronized boolean toggleClaimShow(UUID playerId) {
+		return this.service.toggleClaimShow(playerId);
+	}
+
 	public synchronized PermissionResult getPermission(ClaimData claim, UUID playerId, boolean adminBypass) {
 		return this.service.getPermission(claim, playerId, adminBypass);
 	}

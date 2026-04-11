@@ -27,6 +27,7 @@ public final class CommonClaimService {
 	private static final Type CLAIM_LIST_TYPE = new TypeToken<List<ClaimData>>() { }.getType();
 	private static final Type PLAYER_LIMITS_TYPE = new TypeToken<Map<String, Integer>>() { }.getType();
 	private static final Type STARTER_KIT_RECIPIENTS_TYPE = new TypeToken<List<String>>() { }.getType();
+	private static final Type CLAIM_SHOW_PREFS_TYPE = new TypeToken<List<String>>() { }.getType();
 
 	private final PathLayoutPort paths;
 	private final ClaimValidator claimValidator;
@@ -35,6 +36,7 @@ public final class CommonClaimService {
 	private final Map<String, ClaimData> claimsById = new LinkedHashMap<>();
 	private final Map<String, Integer> playerLimits = new HashMap<>();
 	private final Set<String> starterKitRecipients = new LinkedHashSet<>();
+	private final Set<String> claimShowEnabled = new LinkedHashSet<>();
 	private final PersistentStateHelper.JsonOutput jsonOutput;
 	private final Consumer<String> infoLogger;
 	private final String labelPrefix;
@@ -93,6 +95,12 @@ public final class CommonClaimService {
 			List.of(),
 			this.labelPrefix + " starter kit records",
 			this.opsSettings.recoverFromBackupOnLoadFailure));
+		List<String> loadedClaimShowPrefs = new ArrayList<>(PersistentStateHelper.readJson(
+			this.paths.claimShowPreferencesFile(),
+			CLAIM_SHOW_PREFS_TYPE,
+			List.of(),
+			this.labelPrefix + " claim show preferences",
+			false));
 
 		LinkedHashMap<String, ClaimData> loadedClaimsById = new LinkedHashMap<>();
 		for (ClaimData claim : loadedClaims) {
@@ -118,6 +126,10 @@ public final class CommonClaimService {
 		this.playerLimits.putAll(normalizedPlayerLimits);
 		this.starterKitRecipients.clear();
 		this.starterKitRecipients.addAll(normalizedStarterKitRecipients);
+		this.claimShowEnabled.clear();
+		for (String playerId : loadedClaimShowPrefs) {
+			this.claimShowEnabled.add(ClaimData.normalizePlayerId(playerId));
+		}
 		this.loaded = true;
 
 		this.infoLogger.accept(
@@ -152,6 +164,13 @@ public final class CommonClaimService {
 			this.labelPrefix + " starter kit records",
 			this.opsSettings.createDataBackups,
 			this.jsonOutput);
+		PersistentStateHelper.writeJsonAtomically(
+			this.paths.claimShowPreferencesFile(),
+			new ArrayList<>(this.claimShowEnabled),
+			CLAIM_SHOW_PREFS_TYPE,
+			this.labelPrefix + " claim show preferences",
+			false,
+			this.jsonOutput);
 	}
 
 	public synchronized void unload() {
@@ -159,6 +178,7 @@ public final class CommonClaimService {
 		this.claimLookupIndex.clear();
 		this.playerLimits.clear();
 		this.starterKitRecipients.clear();
+		this.claimShowEnabled.clear();
 		this.gameplayConfig = new GameplayConfig();
 		this.opsSettings = new OpsSettings();
 		this.loaded = false;
@@ -257,6 +277,24 @@ public final class CommonClaimService {
 
 		this.starterKitRecipients.add(playerUuid);
 		save();
+	}
+
+	public synchronized boolean isClaimShowEnabled(UUID playerId) {
+		return this.claimShowEnabled.contains(Objects.requireNonNull(playerId, "playerId").toString());
+	}
+
+	public synchronized boolean toggleClaimShow(UUID playerId) {
+		requireLoaded();
+		String id = Objects.requireNonNull(playerId, "playerId").toString();
+		if (this.claimShowEnabled.contains(id)) {
+			this.claimShowEnabled.remove(id);
+			save();
+			return false;
+		} else {
+			this.claimShowEnabled.add(id);
+			save();
+			return true;
+		}
 	}
 
 	public synchronized PermissionResult getPermission(ClaimData claim, UUID playerId, boolean adminBypass) {

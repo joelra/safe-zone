@@ -27,5 +27,7 @@ public interface PathLayoutPort {
 
 	Path starterKitRecipientsFile();
 
+	Path claimShowPreferencesFile();
+
 	Path auditLogFile();
 }

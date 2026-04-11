@@ -215,6 +215,11 @@ class CommonClaimServiceTest {
 		}
 
 		@Override
+		public Path claimShowPreferencesFile() {
+			return dataDirectory().resolve("claim_show_preferences.json");
+		}
+
+		@Override
 		public Path auditLogFile() {
 			return logDirectory().resolve("audit.log");
 		}

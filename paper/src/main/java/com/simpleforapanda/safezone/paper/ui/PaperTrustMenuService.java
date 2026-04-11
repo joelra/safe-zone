@@ -20,6 +20,7 @@ import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,16 +36,21 @@ import static net.kyori.adventure.text.format.NamedTextColor.GOLD;
 import static net.kyori.adventure.text.format.NamedTextColor.GRAY;
 import static net.kyori.adventure.text.format.NamedTextColor.GREEN;
 import static net.kyori.adventure.text.format.NamedTextColor.RED;
+import static net.kyori.adventure.text.format.NamedTextColor.WHITE;
 import static net.kyori.adventure.text.format.NamedTextColor.YELLOW;
 
 public final class PaperTrustMenuService implements Listener {
 	private static final String ADMIN_PERMISSION = "safezone.command.admin";
 	private static final String MENU_TITLE = "Safe Zone • Build Access";
 	private static final int TOTAL_SLOT_COUNT = 54;
-	private static final int PLAYER_GRID_SLOT_COUNT = 45;
+	private static final int NAV_ROW_START = 45;
 	private static final int PREVIOUS_PAGE_SLOT = 45;
 	private static final int PAGE_INFO_SLOT = 49;
 	private static final int NEXT_PAGE_SLOT = 53;
+	// Trusted section is always in row 0 (header) + rows 1..MAX_TRUSTED_ROWS (heads).
+	// Two rows of trusted heads gives 18 slots, which is generous for most servers.
+	// If more players are trusted than fit, the header shows "+N more".
+	private static final int MAX_TRUSTED_ROWS = 2;
 
 	private final PaperClaimStore claimStore;
 
@@ -78,26 +84,22 @@ public final class PaperTrustMenuService implements Listener {
 			return;
 		}
 
-		if (rawSlot == PREVIOUS_PAGE_SLOT && holder.page() > 0) {
-			holder.setPage(holder.page() - 1);
+		if (rawSlot == PREVIOUS_PAGE_SLOT && holder.untrustedPage() > 0) {
+			holder.setUntrustedPage(holder.untrustedPage() - 1);
 			refresh(holder, player);
 			return;
 		}
-		if (rawSlot == NEXT_PAGE_SLOT && holder.page() + 1 < holder.pageCount()) {
-			holder.setPage(holder.page() + 1);
+		if (rawSlot == NEXT_PAGE_SLOT && holder.untrustedPage() + 1 < holder.untrustedPageCount()) {
+			holder.setUntrustedPage(holder.untrustedPage() + 1);
 			refresh(holder, player);
 			return;
 		}
-		if (rawSlot >= PLAYER_GRID_SLOT_COUNT) {
+
+		TrustEntry entry = holder.slotToEntry().get(rawSlot);
+		if (entry == null) {
 			return;
 		}
 
-		int entryIndex = holder.page() * PLAYER_GRID_SLOT_COUNT + rawSlot;
-		if (entryIndex >= holder.entries().size()) {
-			return;
-		}
-
-		TrustEntry entry = holder.entries().get(entryIndex);
 		try {
 			boolean nowTrusted = this.claimStore.toggleTrustedPlayer(holder.claimId(), entry.playerId(), entry.playerName());
 			player.sendMessage(text(
@@ -132,29 +134,101 @@ public final class PaperTrustMenuService implements Listener {
 			return false;
 		}
 
-		List<TrustEntry> entries = collectEntries(claim.get());
-		holder.setEntries(entries);
-		holder.setPage(Math.max(0, Math.min(holder.page(), Math.max(0, holder.pageCount() - 1))));
+		List<TrustEntry> allEntries = collectEntries(claim.get());
+		List<TrustEntry> trusted = allEntries.stream().filter(TrustEntry::trusted).toList();
+		List<TrustEntry> untrusted = allEntries.stream().filter(e -> !e.trusted()).toList();
 
+		// --- Layout ---
+		// Row 0:                  trusted section header (lime glass panes)
+		// Rows 1..trustedRows:    trusted player heads
+		// Row trustedRows+1:      untrusted section header (gray glass panes)
+		// Rows trustedRows+2..4:  untrusted player heads
+		// Row 5 (slots 45-53):    navigation
+		int trustedRows = Math.min(MAX_TRUSTED_ROWS, Math.max(1, (trusted.size() + 8) / 9));
+		int trustedContentStart = 9;
+		int trustedContentEnd = trustedContentStart + trustedRows * 9;
+		int untrustedHeaderStart = trustedContentEnd;
+		int untrustedContentStart = untrustedHeaderStart + 9;
+		int untrustedAvailableSlots = NAV_ROW_START - untrustedContentStart;
+
+		int visibleTrustedCount = Math.min(trusted.size(), trustedRows * 9);
+		boolean trustedOverflow = trusted.size() > visibleTrustedCount;
+
+		int untrustedPageCount = Math.max(1, (untrusted.size() + untrustedAvailableSlots - 1) / untrustedAvailableSlots);
+		holder.setUntrustedPageCount(untrustedPageCount);
+		holder.setUntrustedPage(Math.max(0, Math.min(holder.untrustedPage(), untrustedPageCount - 1)));
+
+		// --- Build slot→entry map ---
+		Map<Integer, TrustEntry> slotToEntry = new HashMap<>();
+		for (int i = 0; i < visibleTrustedCount; i++) {
+			slotToEntry.put(trustedContentStart + i, trusted.get(i));
+		}
+		int untrustedOffset = holder.untrustedPage() * untrustedAvailableSlots;
+		for (int i = 0; i < untrustedAvailableSlots; i++) {
+			int idx = untrustedOffset + i;
+			if (idx >= untrusted.size()) {
+				break;
+			}
+			slotToEntry.put(untrustedContentStart + i, untrusted.get(idx));
+		}
+		holder.setSlotToEntry(slotToEntry);
+
+		// --- Render ---
 		Inventory inventory = holder.getInventory();
 		inventory.clear();
-		int startIndex = holder.page() * PLAYER_GRID_SLOT_COUNT;
-		for (int slot = 0; slot < PLAYER_GRID_SLOT_COUNT; slot++) {
-			int entryIndex = startIndex + slot;
-			if (entryIndex >= entries.size()) {
-				continue;
+
+		// Trusted section header (row 0, slots 0-8)
+		String trustedLabel = trustedOverflow
+			? "Trusted Players (+" + (trusted.size() - visibleTrustedCount) + " more)"
+			: "Trusted Players";
+		renderSectionHeader(inventory, 0, Material.LIME_STAINED_GLASS_PANE, GREEN, trustedLabel);
+
+		// Trusted player heads
+		for (var e : slotToEntry.entrySet()) {
+			int slot = e.getKey();
+			if (slot >= trustedContentStart && slot < trustedContentEnd) {
+				inventory.setItem(slot, buildPlayerHead(e.getValue()));
 			}
-			inventory.setItem(slot, buildPlayerHead(entries.get(entryIndex)));
 		}
 
-		if (holder.page() > 0) {
+		// Untrusted section header
+		String untrustedLabel = untrusted.isEmpty() ? "Other Players" : "Other Players (" + untrusted.size() + ")";
+		renderSectionHeader(inventory, untrustedHeaderStart, Material.GRAY_STAINED_GLASS_PANE, GRAY, untrustedLabel);
+
+		// Untrusted player heads
+		for (var e : slotToEntry.entrySet()) {
+			int slot = e.getKey();
+			if (slot >= untrustedContentStart) {
+				inventory.setItem(slot, buildPlayerHead(e.getValue()));
+			}
+		}
+
+		// Navigation row
+		inventory.setItem(PAGE_INFO_SLOT, createPageInfoItem(claim.get(), trusted.size(), untrusted.size(),
+			holder.untrustedPage(), untrustedPageCount));
+		if (holder.untrustedPage() > 0) {
 			inventory.setItem(PREVIOUS_PAGE_SLOT, createNavigationItem(Material.ARROW, "Previous Page", "Go to the previous page"));
 		}
-		inventory.setItem(PAGE_INFO_SLOT, createPageInfoItem(holder, claim.get()));
-		if (holder.page() + 1 < holder.pageCount()) {
+		if (holder.untrustedPage() + 1 < untrustedPageCount) {
 			inventory.setItem(NEXT_PAGE_SLOT, createNavigationItem(Material.ARROW, "Next Page", "Go to the next page"));
 		}
 		return true;
+	}
+
+	private static void renderSectionHeader(Inventory inventory, int startSlot, Material pane,
+			net.kyori.adventure.text.format.NamedTextColor labelColor, String label) {
+		for (int col = 0; col < 9; col++) {
+			int slot = startSlot + col;
+			ItemStack stack = new ItemStack(pane);
+			ItemMeta meta = stack.getItemMeta();
+			if (col == 4) {
+				meta.displayName(text(label, labelColor));
+			} else {
+				meta.displayName(text(" ", WHITE));
+			}
+			stack.setItemMeta(meta);
+			inventory.setItem(slot, stack);
+		}
 	}
 
 	private List<TrustEntry> collectEntries(ClaimData claim) {
@@ -227,18 +301,19 @@ public final class PaperTrustMenuService implements Listener {
 		return stack;
 	}
 
-	private static ItemStack createPageInfoItem(MenuHolder holder, ClaimData claim) {
-		long trustedCount = holder.entries().stream().filter(TrustEntry::trusted).count();
-		long offlineTrustedCount = holder.entries().stream().filter(entry -> entry.trusted() && !entry.online()).count();
+	private static ItemStack createPageInfoItem(ClaimData claim, int trustedCount, int untrustedCount,
+			int untrustedPage, int untrustedPageCount) {
 		ItemStack stack = new ItemStack(Material.BOOK);
 		ItemMeta meta = stack.getItemMeta();
 		meta.displayName(text("Build Access", GOLD));
-		meta.lore(List.of(
-			text("Claim: " + claim.claimId, YELLOW),
-			text("Click a head to allow or remove building.", GRAY),
-			text("Page " + (holder.page() + 1) + " / " + holder.pageCount(), BLUE),
-			text(holder.entries().isEmpty() ? "No players to show right now." : holder.entries().size() + " players shown", GRAY),
-			text(trustedCount + " trusted, " + offlineTrustedCount + " offline", DARK_GRAY)));
+		List<net.kyori.adventure.text.Component> lore = new ArrayList<>();
+		lore.add(text("Claim: " + claim.claimId, YELLOW));
+		lore.add(text("Click a head to allow or remove building.", GRAY));
+		lore.add(text(trustedCount + " trusted, " + untrustedCount + " other players", DARK_GRAY));
+		if (untrustedPageCount > 1) {
+			lore.add(text("Other players: page " + (untrustedPage + 1) + " / " + untrustedPageCount, BLUE));
+		}
+		meta.lore(lore);
 		stack.setItemMeta(meta);
 		return stack;
 	}
@@ -263,8 +338,9 @@ public final class PaperTrustMenuService implements Listener {
 	private static final class MenuHolder implements InventoryHolder {
 		private final String claimId;
 		private final Inventory inventory = Bukkit.createInventory(this, TOTAL_SLOT_COUNT, text(MENU_TITLE));
-		private List<TrustEntry> entries = List.of();
-		private int page;
+		private Map<Integer, TrustEntry> slotToEntry = Map.of();
+		private int untrustedPage;
+		private int untrustedPageCount = 1;
 
 		private MenuHolder(String claimId) {
 			this.claimId = claimId;
@@ -279,24 +355,28 @@ public final class PaperTrustMenuService implements Listener {
 			return this.claimId;
 		}
 
-		private List<TrustEntry> entries() {
-			return this.entries;
+		private Map<Integer, TrustEntry> slotToEntry() {
+			return this.slotToEntry;
 		}
 
-		private void setEntries(List<TrustEntry> entries) {
-			this.entries = new ArrayList<>(entries);
+		private void setSlotToEntry(Map<Integer, TrustEntry> map) {
+			this.slotToEntry = Map.copyOf(map);
 		}
 
-		private int page() {
-			return this.page;
+		private int untrustedPage() {
+			return this.untrustedPage;
 		}
 
-		private void setPage(int page) {
-			this.page = page;
+		private void setUntrustedPage(int page) {
+			this.untrustedPage = page;
 		}
 
-		private int pageCount() {
-			return Math.max(1, (this.entries.size() + PLAYER_GRID_SLOT_COUNT - 1) / PLAYER_GRID_SLOT_COUNT);
+		private int untrustedPageCount() {
+			return this.untrustedPageCount;
+		}
+
+		private void setUntrustedPageCount(int count) {
+			this.untrustedPageCount = count;
 		}
 	}
 

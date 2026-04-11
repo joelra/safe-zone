@@ -138,8 +138,11 @@ Choose the build that matches your server software.
 | `/claim info [claimId]` | Show details for an accessible claim |
 | `/claim trust [claimId]` | Open the trust menu for one of your claims |
 | `/claim remove <claimId>` | Remove one of your claims after confirmation |
+| `/claim show` | Toggle always-on display of your claim boundaries |
 
 `/claim remove` must be run twice within the configured confirmation window.
+
+`/claim show` toggles a persistent per-player setting. When enabled, your claim boundaries remain visible even when not holding the claim wand. The setting is saved and survives server restarts.
 
 ### Admin commands
 

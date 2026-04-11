@@ -63,8 +63,18 @@ public final class ClaimVisualizationManager {
 	public void refreshPlayer(ServerPlayer player) {
 		Map<BlockPos, BlockState> desiredPreview = new HashMap<>();
 		Component overlayMessage = null;
-		if (!this.claimWandHandler.isClaimWand(player.getMainHandItem())) {
+		boolean wandInMainHand = this.claimWandHandler.isClaimWand(player.getMainHandItem());
+		boolean wandInOffhand = this.claimWandHandler.isClaimWand(player.getOffhandItem());
+		boolean holdingWand = wandInMainHand || wandInOffhand;
+
+		if (!wandInMainHand) {
 			this.claimWandHandler.cancelIfNoLongerHoldingWand(player);
+		}
+
+		if (!holdingWand) {
+			if (this.claimManager.isClaimShowEnabled(player.getUUID()) && player.level().dimension() == net.minecraft.world.level.Level.OVERWORLD) {
+				addAlwaysShowOutlines(desiredPreview, player, (ServerLevel) player.level());
+			}
 			applyPreview(player, desiredPreview);
 			return;
 		}
@@ -131,7 +141,12 @@ public final class ClaimVisualizationManager {
 			if (claim.isPresent()) {
 				// Use playerPos for the context anchor so corner heights are stable as the player looks around
 				PreviewContext context = createPreviewContext(player, playerPos);
-				PermissionResult permission = this.claimManager.canBuild(player, playerPos);
+				// Check permission directly on the claim rather than via position lookup so the color
+				// is correct even when the player is outside the claim boundary looking at it.
+				boolean adminBypass = player.permissions().hasPermission(
+					new net.minecraft.server.permissions.Permission.HasCommandLevel(
+						net.minecraft.server.permissions.PermissionLevel.GAMEMASTERS));
+				PermissionResult permission = this.claimManager.getPermission(claim.get(), player.getUUID(), adminBypass);
 				if (confirmation != null) {
 					// Player just claimed this — they own it regardless of standing position
 					permission = PermissionResult.OWNER;
@@ -148,11 +163,41 @@ public final class ClaimVisualizationManager {
 					outlineStep);
 				overlayMessage = buildClaimOverlay(claim.get(), permission, pendingRemoval);
 			}
+
+			if (this.claimManager.isClaimShowEnabled(player.getUUID()) && level.dimension() == net.minecraft.world.level.Level.OVERWORLD) {
+				addAlwaysShowOutlines(desiredPreview, player, level);
+			}
 		}
 
 		applyPreview(player, desiredPreview);
 		if (overlayMessage != null) {
 			player.connection.send(new ClientboundSetActionBarTextPacket(overlayMessage));
+		}
+	}
+
+	private void addAlwaysShowOutlines(Map<BlockPos, BlockState> desiredPreview, ServerPlayer player, ServerLevel level) {
+		int outlineStep = this.claimManager.getGameplayConfig().wandOutlineStep;
+		BlockPos playerPos = player.blockPosition();
+		PreviewContext context = createPreviewContext(player, playerPos);
+		for (ClaimData claim : this.claimManager.getClaimsForOwner(player.getUUID())) {
+			addPreview(desiredPreview,
+				new BlockPos(claim.getMinX(), playerPos.getY(), claim.getMinZ()),
+				new BlockPos(claim.getMaxX(), playerPos.getY(), claim.getMaxZ()),
+				OWNER_EDGE,
+				PREVIEW_CORNER,
+				level,
+				context,
+				outlineStep);
+		}
+		for (ClaimData claim : this.claimManager.getClaimsTrustedFor(player.getUUID())) {
+			addPreview(desiredPreview,
+				new BlockPos(claim.getMinX(), playerPos.getY(), claim.getMinZ()),
+				new BlockPos(claim.getMaxX(), playerPos.getY(), claim.getMaxZ()),
+				TRUSTED_EDGE,
+				PREVIEW_CORNER,
+				level,
+				context,
+				outlineStep);
 		}
 	}
 
