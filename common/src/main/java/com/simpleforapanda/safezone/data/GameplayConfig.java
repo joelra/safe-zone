@@ -87,6 +87,15 @@ public class GameplayConfig {
 		return TimeUnit.DAYS.toMillis(this.notificationRetentionDays);
 	}
 
+	/**
+	 * Returns the effective wand selection range in blocks.
+	 * A configured value of {@code 0} means unlimited, resolved here to 512 blocks
+	 * (the maximum vanilla render distance), which is the largest safe raycast distance.
+	 */
+	public double effectiveWandSelectionRange() {
+		return this.wandSelectionRangeBlocks == 0 ? 512.0 : this.wandSelectionRangeBlocks;
+	}
+
 	public long wandRemoveConfirmWindowMillis() {
 		return TimeUnit.SECONDS.toMillis(this.wandRemoveConfirmSeconds);
 	}

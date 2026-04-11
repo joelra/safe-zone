@@ -11,9 +11,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -27,6 +30,7 @@ import java.util.UUID;
 public final class ClaimVisualizationManager {
 	private static final int VISUAL_TICK_INTERVAL = 8;
 	private static final int LOCAL_VERTICAL_SEARCH = 6;
+	private static final Identifier WAND_REACH_MODIFIER = Identifier.fromNamespaceAndPath("safe-zone", "wand_reach");
 
 	private static final BlockState PREVIEW_EDGE = Blocks.YELLOW_STAINED_GLASS.defaultBlockState();
 	private static final BlockState PREVIEW_CORNER = Blocks.GOLD_BLOCK.defaultBlockState();
@@ -56,8 +60,48 @@ public final class ClaimVisualizationManager {
 	}
 
 	public void clearPlayer(ServerPlayer player) {
+		removeWandReach(player);
 		this.activeConfirmations.remove(player.getUUID());
 		applyPreview(player, Map.of());
+	}
+
+	/**
+	 * In creative mode, {@code UseItemCallback} may not fire for items with no active use action
+	 * (such as the golden hoe). Extending {@code BLOCK_INTERACTION_RANGE} syncs the client's
+	 * crosshair reach so the client sends a {@code UseItemOnPacket} for distant blocks, which
+	 * triggers {@code UseBlockCallback} normally.
+	 *
+	 * In survival (and other modes), {@code UseItemCallback} fires when no block is in vanilla
+	 * reach, so no attribute change is needed — and avoiding it prevents any risk of interfering
+	 * with vanilla block interaction distance validation.
+	 */
+	private void applyWandReach(ServerPlayer player) {
+		if (!player.isCreative()) {
+			removeWandReach(player);
+			return;
+		}
+		var attr = player.getAttribute(Attributes.BLOCK_INTERACTION_RANGE);
+		if (attr == null) return;
+		double range = this.claimManager.getGameplayConfig().effectiveWandSelectionRange();
+		double delta = range - attr.getBaseValue();
+		if (delta <= 0) {
+			attr.removeModifier(WAND_REACH_MODIFIER);
+			return;
+		}
+		if (attr.hasModifier(WAND_REACH_MODIFIER)) {
+			AttributeModifier existing = attr.getModifier(WAND_REACH_MODIFIER);
+			if (existing != null && existing.amount() == delta) {
+				return;
+			}
+		}
+		attr.addOrUpdateTransientModifier(new AttributeModifier(WAND_REACH_MODIFIER, delta, AttributeModifier.Operation.ADD_VALUE));
+	}
+
+	private static void removeWandReach(ServerPlayer player) {
+		var attr = player.getAttribute(Attributes.BLOCK_INTERACTION_RANGE);
+		if (attr != null) {
+			attr.removeModifier(WAND_REACH_MODIFIER);
+		}
 	}
 
 	public void refreshPlayer(ServerPlayer player) {
@@ -65,9 +109,11 @@ public final class ClaimVisualizationManager {
 		Component overlayMessage = null;
 		if (!this.claimWandHandler.isClaimWand(player.getMainHandItem())) {
 			this.claimWandHandler.cancelIfNoLongerHoldingWand(player);
+			removeWandReach(player);
 			applyPreview(player, desiredPreview);
 			return;
 		}
+		applyWandReach(player);
 
 		var gameplayConfig = this.claimManager.getGameplayConfig();
 

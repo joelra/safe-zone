@@ -12,7 +12,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
@@ -38,6 +41,7 @@ import static net.kyori.adventure.text.format.NamedTextColor.RED;
 import static net.kyori.adventure.text.format.NamedTextColor.YELLOW;
 
 public final class PaperClaimVisualizationService implements Listener {
+	private static final NamespacedKey WAND_REACH_KEY = new NamespacedKey("safe-zone", "wand_reach");
 	private static final int VISUAL_TICK_INTERVAL = 8;
 	private static final int LOCAL_VERTICAL_SEARCH = 6;
 
@@ -85,15 +89,43 @@ public final class PaperClaimVisualizationService implements Listener {
 	}
 
 	public void clearPlayer(Player player) {
+		removeWandReach(player);
 		this.activeConfirmations.remove(player.getUniqueId());
 		applyPreview(player, Map.of());
 	}
 
 	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent event) {
+		removeWandReach(event.getPlayer());
 		UUID playerId = event.getPlayer().getUniqueId();
 		this.activePreviews.remove(playerId);
 		this.activeConfirmations.remove(playerId);
+	}
+
+	private void applyWandReach(Player player, SafeZoneConfig config) {
+		var attr = player.getAttribute(Attribute.BLOCK_INTERACTION_RANGE);
+		if (attr == null) return;
+		double range = config.gameplay.effectiveWandSelectionRange();
+		double delta = range - attr.getBaseValue();
+		if (delta <= 0) {
+			attr.removeModifier(WAND_REACH_KEY);
+			return;
+		}
+		for (AttributeModifier mod : attr.getModifiers()) {
+			if (mod.getKey().equals(WAND_REACH_KEY)) {
+				if (mod.getAmount() == delta) return;
+				attr.removeModifier(WAND_REACH_KEY);
+				break;
+			}
+		}
+		attr.addModifier(new AttributeModifier(WAND_REACH_KEY, delta, AttributeModifier.Operation.ADD_NUMBER));
+	}
+
+	private static void removeWandReach(Player player) {
+		var attr = player.getAttribute(Attribute.BLOCK_INTERACTION_RANGE);
+		if (attr != null) {
+			attr.removeModifier(WAND_REACH_KEY);
+		}
 	}
 
 	private void tick() {
@@ -385,9 +417,11 @@ public final class PaperClaimVisualizationService implements Listener {
 		Component overlayMessage = null;
 		if (!PaperClaimWandSupport.isClaimWand(player.getInventory().getItemInMainHand(), config.gameplay)) {
 			this.wandState.cancelIfNoLongerHoldingWand(player, config.gameplay);
+			removeWandReach(player);
 			applyPreview(player, desiredPreview);
 			return;
 		}
+		applyWandReach(player, config);
 
 		// Consume any just-completed claim so it shows immediately for wandConfirmDisplaySeconds
 		this.wandState.takeConfirmation(player.getUniqueId()).ifPresent(claim ->

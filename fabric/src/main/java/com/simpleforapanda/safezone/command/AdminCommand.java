@@ -245,6 +245,7 @@ public final class AdminCommand {
 			throw CLAIM_NOT_FOUND.create();
 		}
 
+		claimWandHandler.clearPlayer(UUID.fromString(ClaimData.normalizePlayerId(claim.ownerUuid)));
 		notificationManager.queueClaimRemovedNotification(claim, source.getTextName());
 		auditLogger.logAdminAction(source.getTextName(), "REMOVE", claim.claimId, "owner=" + claim.ownerName);
 		source.sendSuccess(() -> CommandTextHelper.statusLine("REMOVED", ChatFormatting.RED,
@@ -277,6 +278,7 @@ public final class AdminCommand {
 			notificationManager.queueClaimRemovedNotification(claim, source.getTextName());
 		}
 
+		claimWandHandler.clearPlayer(target.id());
 		PENDING_REMOVE_ALL.remove(source.getPlayerOrException().getUUID());
 		auditLogger.logAdminAction(source.getTextName(), "REMOVEALL", "-", "owner=" + target.name() + " count=" + claims.size());
 		source.sendSuccess(() -> CommandTextHelper.statusLine("REMOVED", ChatFormatting.RED,
