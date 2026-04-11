@@ -30,6 +30,7 @@ public final class ClaimWandHandler {
 	private final Map<UUID, BlockPos> firstCorners = new ConcurrentHashMap<>();
 	private final Map<UUID, PendingRemoval> pendingRemovals = new ConcurrentHashMap<>();
 	private final Map<UUID, ResizeState> resizeStates = new ConcurrentHashMap<>();
+	private final Map<UUID, com.simpleforapanda.safezone.data.ClaimData> pendingConfirmations = new ConcurrentHashMap<>();
 
 	public ClaimWandHandler(ClaimManager claimManager) {
 		this.claimManager = claimManager;
@@ -67,6 +68,7 @@ public final class ClaimWandHandler {
 
 			this.resizeStates.remove(player.getUUID());
 			this.pendingRemovals.remove(player.getUUID());
+			this.pendingConfirmations.put(player.getUUID(), result.claim());
 			spawnCornerParticles(level, clickedPos, false);
 			playFeedback(level, clickedPos, SoundEvents.PLAYER_LEVELUP, 0.75F, 1.0F);
 			PlayerMessageHelper.sendStatus(player, "RESIZED", net.minecraft.ChatFormatting.GREEN,
@@ -111,6 +113,7 @@ public final class ClaimWandHandler {
 
 		this.firstCorners.remove(player.getUUID());
 		this.pendingRemovals.remove(player.getUUID());
+		this.pendingConfirmations.put(player.getUUID(), result.claim());
 		spawnCornerParticles(level, clickedPos, false);
 		playFeedback(level, clickedPos, SoundEvents.PLAYER_LEVELUP, 0.75F, 1.0F);
 		PlayerMessageHelper.sendStatus(player, "CLAIMED", net.minecraft.ChatFormatting.GREEN,
@@ -201,6 +204,10 @@ public final class ClaimWandHandler {
 		PlayerMessageHelper.sendError(player, message);
 	}
 
+	public Optional<com.simpleforapanda.safezone.data.ClaimData> takeConfirmation(UUID playerId) {
+		return Optional.ofNullable(this.pendingConfirmations.remove(playerId));
+	}
+
 	public Optional<BlockPos> getFirstCorner(UUID playerId) {
 		return Optional.ofNullable(this.firstCorners.get(playerId));
 	}
@@ -213,6 +220,7 @@ public final class ClaimWandHandler {
 		boolean clearedSelection = this.firstCorners.remove(playerId) != null;
 		boolean clearedResize = this.resizeStates.remove(playerId) != null;
 		boolean clearedRemoval = this.pendingRemovals.remove(playerId) != null;
+		this.pendingConfirmations.remove(playerId);
 		return clearedSelection || clearedResize || clearedRemoval;
 	}
 

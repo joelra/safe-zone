@@ -29,7 +29,6 @@ import java.util.UUID;
 
 public final class ClaimVisualizationManager {
 	private static final int VISUAL_TICK_INTERVAL = 8;
-	private static final int OUTLINE_STEP = 4;
 	private static final int LOCAL_VERTICAL_SEARCH = 6;
 	private static final Identifier WAND_REACH_MODIFIER = Identifier.fromNamespaceAndPath("safe-zone", "wand_reach");
 
@@ -43,6 +42,7 @@ public final class ClaimVisualizationManager {
 	private final ClaimManager claimManager;
 	private final ClaimWandHandler claimWandHandler;
 	private final Map<UUID, Map<BlockPos, BlockState>> activePreviews = new HashMap<>();
+	private final Map<UUID, ConfirmedClaim> activeConfirmations = new HashMap<>();
 
 	public ClaimVisualizationManager(ClaimManager claimManager, ClaimWandHandler claimWandHandler) {
 		this.claimManager = claimManager;
@@ -61,6 +61,7 @@ public final class ClaimVisualizationManager {
 
 	public void clearPlayer(ServerPlayer player) {
 		removeWandReach(player);
+		this.activeConfirmations.remove(player.getUUID());
 		applyPreview(player, Map.of());
 	}
 
@@ -114,49 +115,83 @@ public final class ClaimVisualizationManager {
 		}
 		applyWandReach(player);
 
+		var gameplayConfig = this.claimManager.getGameplayConfig();
+
+		// Consume any just-completed claim so it shows immediately for wandConfirmDisplaySeconds
+		this.claimWandHandler.takeConfirmation(player.getUUID()).ifPresent(claim ->
+			this.activeConfirmations.put(player.getUUID(),
+				new ConfirmedClaim(claim, System.currentTimeMillis() + gameplayConfig.wandConfirmDisplayMillis())));
+
+		int selectionRange = gameplayConfig.wandSelectionRangeBlocks;
+		int outlineStep = gameplayConfig.wandOutlineStep;
+		BlockPos lookTarget = resolvePreviewTarget(player, selectionRange);
+
 		ServerLevel level = (ServerLevel) player.level();
 		BlockPos playerPos = player.blockPosition();
 		var resizeState = this.claimWandHandler.getResizeState(player.getUUID());
 		var selectedFirstCorner = this.claimWandHandler.getFirstCorner(player.getUUID());
 		if (resizeState.isPresent()) {
-			BlockPos previewTarget = resolvePreviewTarget(player);
 			var validation = this.claimManager.validateResizedClaim(resizeState.get().claimId(), player.level(), player.getUUID(),
-				resizeState.get().fixedCorner(), previewTarget);
+				resizeState.get().fixedCorner(), lookTarget);
+			PreviewContext resizeContext = createPreviewContext(player, lookTarget);
 			addPreview(desiredPreview,
 				resizeState.get().fixedCorner(),
-				previewTarget,
+				lookTarget,
 				PREVIEW_EDGE,
 				PREVIEW_CORNER,
 				level,
-				createPreviewContext(player, previewTarget));
-			addConflictingClaimPreview(desiredPreview, validation.conflictingClaim(), level, createPreviewContext(player, previewTarget));
-			overlayMessage = buildResizePreviewMessage(resizeState.get(), previewTarget, validation);
+				resizeContext,
+				outlineStep);
+			addConflictingClaimPreview(desiredPreview, validation.conflictingClaim(), level, resizeContext, outlineStep);
+			overlayMessage = buildResizePreviewMessage(resizeState.get(), lookTarget, validation);
 		} else if (selectedFirstCorner.isPresent()) {
-			BlockPos previewTarget = resolvePreviewTarget(player);
-			var validation = this.claimManager.validateNewClaim(player.level(), player.getUUID(), selectedFirstCorner.get(), previewTarget);
+			var validation = this.claimManager.validateNewClaim(player.level(), player.getUUID(), selectedFirstCorner.get(), lookTarget);
+			PreviewContext selectionContext = createPreviewContext(player, lookTarget);
 			addPreview(desiredPreview,
 				selectedFirstCorner.get(),
-				previewTarget,
+				lookTarget,
 				PREVIEW_EDGE,
 				PREVIEW_CORNER,
 				level,
-				createPreviewContext(player, previewTarget));
-			addConflictingClaimPreview(desiredPreview, validation.conflictingClaim(), level, createPreviewContext(player, previewTarget));
-			overlayMessage = buildPreviewMessage(selectedFirstCorner.get(), previewTarget, validation);
+				selectionContext,
+				outlineStep);
+			addConflictingClaimPreview(desiredPreview, validation.conflictingClaim(), level, selectionContext, outlineStep);
+			overlayMessage = buildPreviewMessage(selectedFirstCorner.get(), lookTarget, validation);
 		} else {
-			var claim = this.claimManager.getClaimAt(playerPos);
+			// Check active confirmation first (just created/resized a claim)
+			ConfirmedClaim confirmation = this.activeConfirmations.get(player.getUUID());
+			if (confirmation != null && System.currentTimeMillis() > confirmation.expiresAt()) {
+				this.activeConfirmations.remove(player.getUUID());
+				confirmation = null;
+			}
+
+			var claim = confirmation != null
+				? java.util.Optional.of(confirmation.claim())
+				: this.claimManager.getClaimAt(playerPos);
+
+			// Fall back to the block the player is looking at (covers post-creation and wand-inspection)
+			if (claim.isEmpty()) {
+				claim = this.claimManager.getClaimAt(lookTarget);
+			}
+
 			if (claim.isPresent()) {
+				// Use playerPos for the context anchor so corner heights are stable as the player looks around
+				PreviewContext context = createPreviewContext(player, playerPos);
 				PermissionResult permission = this.claimManager.canBuild(player, playerPos);
+				if (confirmation != null) {
+					// Player just claimed this — they own it regardless of standing position
+					permission = PermissionResult.OWNER;
+				}
 				boolean pendingRemoval = permission == PermissionResult.OWNER
 					&& this.claimWandHandler.isPendingRemoval(player.getUUID(), claim.get().claimId);
-				BlockPos anchorTarget = resolvePreviewTarget(player);
 				addPreview(desiredPreview,
 					new BlockPos(claim.get().getMinX(), playerPos.getY(), claim.get().getMinZ()),
 					new BlockPos(claim.get().getMaxX(), playerPos.getY(), claim.get().getMaxZ()),
 					pendingRemoval ? BLOCKED_EDGE : permissionEdge(permission),
 					PREVIEW_CORNER,
 					level,
-					createPreviewContext(player, anchorTarget));
+					context,
+					outlineStep);
 				overlayMessage = buildClaimOverlay(claim.get(), permission, pendingRemoval);
 			}
 		}
@@ -168,17 +203,21 @@ public final class ClaimVisualizationManager {
 	}
 
 	private static void addPreview(Map<BlockPos, BlockState> desiredPreview, BlockPos firstCorner, BlockPos secondCorner,
-		BlockState edgeState, BlockState cornerState, ServerLevel level, PreviewContext context) {
+		BlockState edgeState, BlockState cornerState, ServerLevel level, PreviewContext context, int maxOutlineStep) {
 		int minX = Math.min(firstCorner.getX(), secondCorner.getX());
 		int maxX = Math.max(firstCorner.getX(), secondCorner.getX());
 		int minZ = Math.min(firstCorner.getZ(), secondCorner.getZ());
 		int maxZ = Math.max(firstCorner.getZ(), secondCorner.getZ());
 
-		for (int x = minX; x <= maxX; x += OUTLINE_STEP) {
+		// Scale the step so small claims show intermediate glass markers between corners
+		int xStep = Math.max(1, Math.min(maxOutlineStep, (maxX - minX) / 2));
+		int zStep = Math.max(1, Math.min(maxOutlineStep, (maxZ - minZ) / 2));
+
+		for (int x = minX; x <= maxX; x += xStep) {
 			addMarker(desiredPreview, level, context, x, minZ, edgeState);
 			addMarker(desiredPreview, level, context, x, maxZ, edgeState);
 		}
-		for (int z = minZ; z <= maxZ; z += OUTLINE_STEP) {
+		for (int z = minZ; z <= maxZ; z += zStep) {
 			addMarker(desiredPreview, level, context, minX, z, edgeState);
 			addMarker(desiredPreview, level, context, maxX, z, edgeState);
 		}
@@ -198,7 +237,7 @@ public final class ClaimVisualizationManager {
 	}
 
 	private static void addConflictingClaimPreview(Map<BlockPos, BlockState> desiredPreview, ClaimData conflictingClaim,
-		ServerLevel level, PreviewContext context) {
+		ServerLevel level, PreviewContext context, int maxOutlineStep) {
 		if (conflictingClaim == null) {
 			return;
 		}
@@ -209,7 +248,8 @@ public final class ClaimVisualizationManager {
 			BLOCKED_EDGE,
 			BLOCKED_EDGE,
 			level,
-			context);
+			context,
+			maxOutlineStep);
 	}
 
 	private void applyPreview(ServerPlayer player, Map<BlockPos, BlockState> desiredPreview) {
@@ -332,9 +372,8 @@ public final class ClaimVisualizationManager {
 		return claim.ownerName + " (" + claim.claimId + ")";
 	}
 
-	private BlockPos resolvePreviewTarget(ServerPlayer player) {
-		double range = this.claimManager.getGameplayConfig().effectiveWandSelectionRange();
-		HitResult hitResult = player.pick(range, 0.0F, false);
+	private static BlockPos resolvePreviewTarget(ServerPlayer player, int rangeBlocks) {
+		HitResult hitResult = player.pick(rangeBlocks, 0.0F, false);
 		if (hitResult instanceof BlockHitResult blockHitResult && hitResult.getType() == HitResult.Type.BLOCK) {
 			return blockHitResult.getBlockPos();
 		}
@@ -428,5 +467,8 @@ public final class ClaimVisualizationManager {
 	}
 
 	private record PreviewContext(boolean useSurfaceAnchors, int referenceY) {
+	}
+
+	private record ConfirmedClaim(ClaimData claim, long expiresAt) {
 	}
 }

@@ -45,11 +45,6 @@ public final class PaperClaimWandListener implements Listener {
 			return;
 		}
 
-		Block clickedBlock = event.getClickedBlock();
-		if (clickedBlock == null) {
-			return;
-		}
-
 		SafeZoneConfig config = this.runtime.services().configService().current();
 		if (!PaperClaimWandSupport.isClaimWand(event.getItem(), config.gameplay)) {
 			return;
@@ -57,7 +52,12 @@ public final class PaperClaimWandListener implements Listener {
 
 		Player player = event.getPlayer();
 		Action action = event.getAction();
+
 		if (action == Action.LEFT_CLICK_BLOCK) {
+			Block clickedBlock = event.getClickedBlock();
+			if (clickedBlock == null) {
+				return;
+			}
 			if (hasPendingState(player)) {
 				event.setUseInteractedBlock(Event.Result.DENY);
 				event.setUseItemInHand(Event.Result.DENY);
@@ -72,7 +72,24 @@ public final class PaperClaimWandListener implements Listener {
 			}
 			return;
 		}
-		if (action != Action.RIGHT_CLICK_BLOCK) {
+
+		// Resolve the target block: either from the direct interaction (within vanilla reach)
+		// or from a server-side raycast for long-range selection beyond vanilla reach.
+		Block clickedBlock;
+		if (action == Action.RIGHT_CLICK_BLOCK) {
+			clickedBlock = event.getClickedBlock();
+			if (clickedBlock == null) {
+				return;
+			}
+		} else if (action == Action.RIGHT_CLICK_AIR) {
+			clickedBlock = player.getTargetBlockExact(config.gameplay.wandSelectionRangeBlocks);
+			if (clickedBlock == null) {
+				// Genuinely looking at nothing — suppress vanilla hoe but take no claim action.
+				event.setUseItemInHand(Event.Result.DENY);
+				event.setCancelled(true);
+				return;
+			}
+		} else {
 			return;
 		}
 
@@ -128,6 +145,7 @@ public final class PaperClaimWandListener implements Listener {
 
 			this.wandState.clearPendingResize(player.getUniqueId());
 			this.wandState.clearPendingRemoval(player.getUniqueId());
+			this.wandState.storePendingConfirmation(player.getUniqueId(), result.claim());
 			player.sendMessage(text("Updated claim " + formatClaimSummary(result.claim()) + ".", GREEN));
 			player.sendMessage(text("Use /claim here to inspect the new bounds.", AQUA));
 			return;
@@ -172,6 +190,7 @@ public final class PaperClaimWandListener implements Listener {
 
 		this.wandState.clearPendingSelection(player.getUniqueId());
 		this.wandState.clearPendingRemoval(player.getUniqueId());
+		this.wandState.storePendingConfirmation(player.getUniqueId(), result.claim());
 		player.sendMessage(text("Created claim " + formatClaimSummary(result.claim()) + ".", GREEN));
 		player.sendMessage(text("Use /claim trust to manage build access for this claim.", AQUA));
 	}

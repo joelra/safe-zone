@@ -156,16 +156,25 @@ public final class ProtectionListener {
 		if (hand != net.minecraft.world.InteractionHand.MAIN_HAND || !this.claimWandHandler.isClaimWand(heldItem)) {
 			return InteractionResult.PASS;
 		}
+
+		// UseItemCallback fires when the right-click produces no consumed block interaction.
+		// For vanilla items like the golden hoe, the client sends both ServerboundUseItemOnPacket
+		// (for blocks within reach) AND ServerboundUseItemPacket as a fallback when the block
+		// interaction returns PASS — so this callback can fire even when a block IS within reach.
+		// Guard against double-processing by skipping if a block is within the player's vanilla
+		// interaction range; onUseBlock already handled that case.
 		if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
 			return InteractionResult.SUCCESS;
 		}
-		// Guard: if a block is within vanilla reach, UseBlockCallback already handled this click.
+
 		double vanillaReach = player.blockInteractionRange();
 		HitResult vanillaHit = player.pick(vanillaReach, 0.0F, false);
 		if (vanillaHit.getType() == HitResult.Type.BLOCK) {
+			// Block is within vanilla reach — onUseBlock already handled this click.
 			return InteractionResult.SUCCESS;
 		}
-		double range = this.claimManager.getGameplayConfig().effectiveWandSelectionRange();
+
+		int range = this.claimManager.getGameplayConfig().wandSelectionRangeBlocks;
 		HitResult hitResult = player.pick(range, 0.0F, false);
 		if (hitResult instanceof BlockHitResult blockHit && hitResult.getType() == HitResult.Type.BLOCK) {
 			InteractionResult result = this.claimWandHandler.handleUseOn(serverPlayer, (net.minecraft.server.level.ServerLevel) level, blockHit.getBlockPos());
@@ -173,6 +182,8 @@ public final class ProtectionListener {
 				this.claimVisualizationManager.refreshPlayer(serverPlayer);
 			}
 		}
+
+		// Always consume to prevent vanilla golden hoe behaviour when holding the wand.
 		return InteractionResult.SUCCESS;
 	}
 
