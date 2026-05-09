@@ -1,6 +1,6 @@
 plugins {
 	id 'base'
-	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}" apply false
+	id 'net.fabricmc.fabric-loom' version "${loom_version}" apply false
 }
 
 allprojects {

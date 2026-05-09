@@ -38,12 +38,12 @@ configurations.all {
 
 dependencies {
 	implementation project(':common')
-	compileOnly 'io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT'
+	compileOnly 'io.papermc.paper:paper-api:26.1.2.build.+'
 	compileOnly 'com.sk89q.worldedit:worldedit-bukkit:7.3.9'
 	compileOnly 'com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit:2.15.0'
 	// axiomStubs only needs Paper API — avoid pulling in WorldEdit's strict
 	// fastutil version constraint which conflicts with Paper's requirement.
-	axiomStubsCompileOnly 'io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT'
+	axiomStubsCompileOnly 'io.papermc.paper:paper-api:26.1.2.build.+'
 }
 
 processResources {
@@ -55,14 +55,15 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	options.release = 21
+	options.release = 25
 	options.compilerArgs += ['-Xlint:deprecation']
 }
 
 java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
 	withSourcesJar()
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
 }
 
 base {
@@ -74,10 +75,10 @@ tasks.named('runServer') {
 	runDirectory = rootProject.layout.projectDirectory.dir('run/paper')
 	workingDir = rootProject.file('run/paper')
 	downloadPlugins {
-		// Axiom Paper Plugin 5.0.3+1.21.11
-		modrinth('axiom-paper-plugin', '6caOwLe6')
-		// FastAsyncWorldEdit 2.15.0
-		github('IntellectualSites', 'FastAsyncWorldEdit', '2.15.0', 'FastAsyncWorldEdit-Paper-2.15.0.jar')
+			// Axiom Paper Plugin 5.0.4+26.1
+			modrinth('axiom-paper-plugin', 'igh8dKkm')
+			// FastAsyncWorldEdit 2.15.0 — no 26.1 build released yet; update when available
+		//github('IntellectualSites', 'FastAsyncWorldEdit', '2.15.0', 'FastAsyncWorldEdit-Paper-2.15.0.jar')
 		// LuckPerms v5.5.17 -- needed to test per-player permission scenarios (e.g. safezone.axiom without safezone.command.admin)
 		modrinth('luckperms', 'OrIs0S6b')
 	}

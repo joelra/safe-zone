@@ -22,11 +22,11 @@ Module-local tasks also exist:
 - `.\gradlew.bat :fabric:runDatagen`
 - `.\gradlew.bat :paper:runServer`
 
-CI runs `build` on Java 25. The project targets Java 21. There is no dedicated lint or formatting task.
+CI runs `build` on Java 25. The project targets Java 25 via a Gradle toolchain. There is no dedicated lint or formatting task.
 
 ## Project shape
 
-Safe Zone is a **server-side** land-claim project for **Minecraft 1.21.11** with:
+Safe Zone is a **server-side** land-claim project for **Minecraft 26.1** (26.1, 26.1.1, 26.1.2) with:
 
 - `common` for shared models, persistence helpers, and shared services
 - `fabric` for the Fabric mod runtime
@@ -69,7 +69,7 @@ Fabric now has runtime/service composition similar to Paper. Prefer injected ser
 
 ## Guardrails
 
-- For Fabric questions, prefer the versioned docs for this target: `https://docs.fabricmc.net/1.21.11/develop/`
+- For Fabric questions, prefer the versioned docs for this target: `https://docs.fabricmc.net/26.1.2/develop/`
 - Use **Mojang Official Mappings**
 - Mod ID: `safe-zone`
 - Package root: `com.simpleforapanda.safezone`

@@ -1,10 +1,10 @@
 name: SafeZone
 main: com.simpleforapanda.safezone.paper.SafeZonePaperPlugin
 version: ${version}
-api-version: '1.21'
+api-version: '26.1'
 authors:
   - SimpleForAPanda
-description: Server-side land-claim protection for Paper 1.21.11 with claim tools, protections, and trust controls.
+description: Server-side land-claim protection for Paper 26.1 with claim tools, protections, and trust controls.
 softdepend:
   - AxiomPaper
   - FastAsyncWorldEdit

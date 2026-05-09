@@ -11,7 +11,6 @@ import com.simpleforapanda.safezone.runtime.FabricRuntime;
 import com.simpleforapanda.safezone.text.SafeZoneText;
 import com.simpleforapanda.safezone.screen.TrustMenu;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
-import net.fabricmc.fabric.api.event.player.BlockEvents;
 import net.fabricmc.fabric.api.event.player.ItemEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
