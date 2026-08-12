@@ -28,12 +28,12 @@ public final class ClaimVisualizationManager {
 	private static final int VISUAL_TICK_INTERVAL = 8;
 	private static final int LOCAL_VERTICAL_SEARCH = 6;
 
-	private static final BlockState PREVIEW_EDGE = Blocks.YELLOW_STAINED_GLASS.defaultBlockState();
+	private static final BlockState PREVIEW_EDGE = Blocks.STAINED_GLASS.yellow().defaultBlockState();
 	private static final BlockState PREVIEW_CORNER = Blocks.GOLD_BLOCK.defaultBlockState();
-	private static final BlockState OWNER_EDGE = Blocks.LIME_STAINED_GLASS.defaultBlockState();
-	private static final BlockState TRUSTED_EDGE = Blocks.LIGHT_BLUE_STAINED_GLASS.defaultBlockState();
-	private static final BlockState BLOCKED_EDGE = Blocks.RED_STAINED_GLASS.defaultBlockState();
-	private static final BlockState ADMIN_EDGE = Blocks.ORANGE_STAINED_GLASS.defaultBlockState();
+	private static final BlockState OWNER_EDGE = Blocks.STAINED_GLASS.lime().defaultBlockState();
+	private static final BlockState TRUSTED_EDGE = Blocks.STAINED_GLASS.lightBlue().defaultBlockState();
+	private static final BlockState BLOCKED_EDGE = Blocks.STAINED_GLASS.red().defaultBlockState();
+	private static final BlockState ADMIN_EDGE = Blocks.STAINED_GLASS.orange().defaultBlockState();
 
 	private final ClaimManager claimManager;
 	private final ClaimWandHandler claimWandHandler;

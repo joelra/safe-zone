@@ -3,7 +3,7 @@
 	"id": "safe-zone",
 	"version": "${version}",
 	"name": "Safe Zone",
-	"description": "Server-side land-claim protection for Fabric 26.1 with Golden Hoe claiming, /claim player tools, and /sz admin controls for unmodded clients.",
+	"description": "Server-side land-claim protection for Fabric 26.2 with Golden Hoe claiming, /claim player tools, and /sz admin controls for unmodded clients.",
 	"authors": [
 		"SimpleForAPanda"
 	],
@@ -22,9 +22,9 @@
 		"safe-zone.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.19.2",
-		"minecraft": ">=26.1 <26.2",
+		"fabricloader": ">=0.19.3",
+		"minecraft": ">=26.2 <26.3",
 		"java": ">=25",
-		"fabric-api": ">=0.144.0+26.1"
+		"fabric-api": ">=0.152.0+26.2"
 	}
 }

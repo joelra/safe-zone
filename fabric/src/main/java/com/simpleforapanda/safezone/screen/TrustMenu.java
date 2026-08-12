@@ -219,7 +219,7 @@ public class TrustMenu extends AbstractContainerMenu {
 		String trustedLabel = trustedOverflow
 			? "Trusted Players (+" + (trusted.size() - visibleTrustedCount) + " more)"
 			: "Trusted Players";
-		renderSectionHeader(0, Items.LIME_STAINED_GLASS_PANE, ChatFormatting.GREEN, trustedLabel);
+		renderSectionHeader(0, Items.STAINED_GLASS_PANE.lime(), ChatFormatting.GREEN, trustedLabel);
 
 		// Trusted player heads
 		for (Map.Entry<Integer, TrustEntry> e : this.slotToEntry.entrySet()) {
@@ -231,7 +231,7 @@ public class TrustMenu extends AbstractContainerMenu {
 
 		// Untrusted section header
 		String untrustedLabel = untrusted.isEmpty() ? "Other Players" : "Other Players (" + untrusted.size() + ")";
-		renderSectionHeader(untrustedHeaderStart, Items.GRAY_STAINED_GLASS_PANE, ChatFormatting.GRAY, untrustedLabel);
+		renderSectionHeader(untrustedHeaderStart, Items.STAINED_GLASS_PANE.gray(), ChatFormatting.GRAY, untrustedLabel);
 
 		// Untrusted player heads
 		for (Map.Entry<Integer, TrustEntry> e : this.slotToEntry.entrySet()) {
