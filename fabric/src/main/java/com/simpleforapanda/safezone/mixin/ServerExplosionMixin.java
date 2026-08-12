@@ -5,11 +5,14 @@ import com.simpleforapanda.safezone.manager.ClaimManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.hurtingprojectile.windcharge.AbstractWindCharge;
 import net.minecraft.world.level.ServerExplosion;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -61,7 +64,7 @@ public abstract class ServerExplosionMixin {
 		)
 	)
 	private void safezone$blockClaimExplosionMovement(Entity entity, Vec3 pushVector) {
-		if (ClaimEntityProtection.shouldBlockExplosionMovement(entity)) {
+		if (!safezone$isWindChargeExplosion() && ClaimEntityProtection.shouldBlockExplosionMovement(entity)) {
 			return;
 		}
 
@@ -82,10 +85,20 @@ public abstract class ServerExplosionMixin {
 		if (!(pushVector instanceof Vec3 knockbackVector)) {
 			throw new IllegalStateException("Expected Vec3 in explosion knockback redirect but got " + pushVector);
 		}
-		if (ClaimEntityProtection.shouldBlockExplosionMovement(targetPlayer)) {
+		if (!safezone$isWindChargeExplosion() && ClaimEntityProtection.shouldBlockExplosionMovement(targetPlayer)) {
 			return null;
 		}
 
 		return hitPlayers.put(targetPlayer, knockbackVector);
+	}
+
+	// Wind charges (and Breeze wind bursts) are a movement mechanic, not block griefing —
+	// their knockback must never be suppressed inside claims (issues #5 and #6). They are
+	// distinguished from TNT/creeper explosions by their damage type / source projectile.
+	@Unique
+	private boolean safezone$isWindChargeExplosion() {
+		ServerExplosion self = (ServerExplosion) (Object) this;
+		return self.getDirectSourceEntity() instanceof AbstractWindCharge
+			|| self.getDamageSource().is(DamageTypes.WIND_CHARGE);
 	}
 }

@@ -59,6 +59,15 @@ public final class ClaimEntityProtection {
 			return false;
 		}
 
-		return claimManager.canBuild(player, player.blockPosition()) != PermissionResult.DENIED;
+		BlockPos pos = player.blockPosition();
+		// Only protect players who are actually standing inside a claim. In unclaimed
+		// wilderness canBuild() returns OWNER (not DENIED), which previously suppressed
+		// explosion knockback everywhere outside claims — breaking wind-charge movement
+		// in the open and in claims the player has access to (issues #5 and #6).
+		if (claimManager.getClaimAt(pos).isEmpty()) {
+			return false;
+		}
+
+		return claimManager.canBuild(player, pos) != PermissionResult.DENIED;
 	}
 }

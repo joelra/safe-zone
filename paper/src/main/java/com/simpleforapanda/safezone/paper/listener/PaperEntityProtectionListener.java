@@ -5,8 +5,8 @@ import com.simpleforapanda.safezone.data.PermissionResult;
 import com.simpleforapanda.safezone.paper.runtime.PaperClaimStore;
 import com.simpleforapanda.safezone.paper.runtime.PaperRuntime;
 import com.simpleforapanda.safezone.protection.RideableEntityClassifier;
-import io.papermc.paper.event.entity.EntityKnockbackEvent;
 import org.bukkit.Location;
+import org.bukkit.entity.AbstractWindCharge;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
@@ -18,6 +18,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityKnockbackByEntityEvent;
+import org.bukkit.event.entity.EntityKnockbackEvent;
 import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -49,7 +51,14 @@ public final class PaperEntityProtectionListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onEntityKnockback(EntityKnockbackEvent event) {
-		if (event.getCause() != EntityKnockbackEvent.Cause.EXPLOSION) {
+		if (event.getCause() != EntityKnockbackEvent.KnockbackCause.EXPLOSION) {
+			return;
+		}
+
+		// Wind charges (and Breeze wind bursts) are a movement mechanic, not block
+		// griefing — never suppress their knockback (issues #5 and #6).
+		if (event instanceof EntityKnockbackByEntityEvent byEntity
+			&& byEntity.getSourceEntity() instanceof AbstractWindCharge) {
 			return;
 		}
 
