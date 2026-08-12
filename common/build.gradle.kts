@@ -2,8 +2,9 @@ plugins {
     id("java-library")
 }
 
-val requiredJava: JavaVersion =
-    if (stonecutter.current.parsed >= "26.1") JavaVersion.VERSION_25 else JavaVersion.VERSION_21
+// Per-version properties (versions/<mc>/gradle.properties) live on the root node.
+val rootNode = stonecutter.node.sibling("")!!.project
+val javaVersion = rootNode.property("java.version").toString().toInt()
 
 group = property("mod.group").toString()
 version = "${property("mod.version")}+${stonecutter.current.version}"
@@ -13,16 +14,16 @@ base {
 }
 
 dependencies {
-    api("com.google.code.gson:gson:2.13.2")
-    api("org.slf4j:slf4j-api:2.0.17")
+    api("com.google.code.gson:gson:${property("deps.gson")}")
+    api("org.slf4j:slf4j-api:${property("deps.slf4j")}")
 
-    testImplementation(platform("org.junit:junit-bom:5.12.2"))
+    testImplementation(platform("org.junit:junit-bom:${property("deps.junit_bom")}"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.withType<JavaCompile>().configureEach {
-    options.release = requiredJava.majorVersion.toInt()
+    options.release = javaVersion
     options.compilerArgs.add("-Xlint:deprecation")
 }
 
@@ -31,10 +32,8 @@ tasks.test {
 }
 
 java {
-    sourceCompatibility = requiredJava
-    targetCompatibility = requiredJava
     toolchain {
-        languageVersion = JavaLanguageVersion.of(requiredJava.majorVersion.toInt())
+        languageVersion = JavaLanguageVersion.of(javaVersion)
     }
     withSourcesJar()
 }

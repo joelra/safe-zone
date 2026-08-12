@@ -15,6 +15,12 @@ Run tasks are per Minecraft version (Stonecutter node paths — swap `26.2` for 
 - `.\gradlew.bat ":fabric:26.2:runDatagen"`
 - `.\gradlew.bat ":paper:26.2:runServer"`
 
+Runtime-directory cleanup:
+
+- `.\gradlew.bat cleanRunFabric`
+- `.\gradlew.bat cleanRunPaper`
+- `.\gradlew.bat cleanRun`
+
 CI installs Java 21 and 25 and runs `build`; the Gradle toolchain picks Java 25 for 26.1+ and Java 21 for 1.21.11. There is no dedicated lint or formatting task.
 
 ## Multi-version (Stonecutter)
@@ -23,7 +29,8 @@ This is a **multi-version** project built with [Stonecutter](https://stonecutter
 
 - Supported versions and the branch layout (`common`, `fabric`, `paper` branches) are declared in `settings.gradle.kts`.
 - Shared properties live in `gradle.properties`; per-version coordinates in `versions\<mc>\gradle.properties` (read from a branch via `stonecutter.node.sibling("").project.property(...)`).
-- Version-specific source is guarded with Stonecutter `//? if <predicate> { ... //?} else { ... }` comments (e.g. `ContainerInput` vs `ClickType`, `ColorCollection` vs named stained-glass fields).
+- Version-specific source uses two mechanisms: straight identifier renames are `replacements.string(...)` in the branch build script (e.g. `ContainerInput` ↔ `ClickType` in `fabric/build.gradle.kts`); structural differences are `//? if <predicate> { ... //?} else { ... }` comment blocks (e.g. `ColorCollection` vs named stained-glass fields).
+- The `common` module is compiled raw into the loader jars, bypassing Stonecutter processing — **never** put `//?` comments or replacement-target identifiers in `common` source.
 - `26.2` is the `vcsVersion`. **Run `.\gradlew.bat "Set active project to 26.2"` before committing** so the shared source is in the canonical state.
 - The `common` module is pure Java (no Minecraft imports); its source is compiled directly into the loader jars, since a sibling-project dependency triggers a loom/Stonecutter task cycle.
 - Build scripts are Kotlin DSL (`*.build.gradle.kts`); generated `*/versions/` node dirs are gitignored (the authored root `versions/` is tracked).

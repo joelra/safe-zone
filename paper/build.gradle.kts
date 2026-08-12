@@ -5,8 +5,9 @@ plugins {
     id("xyz.jpenilla.run-paper") version "3.0.2"
 }
 
-val requiredJava: JavaVersion =
-    if (stonecutter.current.parsed >= "26.1") JavaVersion.VERSION_25 else JavaVersion.VERSION_21
+// Per-version properties (versions/<mc>/gradle.properties) live on the root node.
+val rootNode = stonecutter.node.sibling("")!!.project
+val javaVersion = rootNode.property("java.version").toString().toInt()
 
 group = property("mod.group").toString()
 version = "${property("mod.version")}+${stonecutter.current.version}"
@@ -14,9 +15,6 @@ version = "${property("mod.version")}+${stonecutter.current.version}"
 base {
     archivesName = "SafeZone-Paper"
 }
-
-// Per-version properties (versions/<mc>/gradle.properties) live on the root node.
-val rootNode = stonecutter.node.sibling("")!!.project
 
 val paperApi = "io.papermc.paper:paper-api:${rootNode.property("paper.api.version")}"
 
@@ -50,16 +48,16 @@ configurations.all {
             useVersion("33.3.1-jre")
             because("Paper API requires guava 33.3.1-jre; WorldEdit/FAWE strict constraint overridden for compile-only use")
         } else if (requested.group == "com.google.code.gson" && requested.name == "gson") {
-            useVersion("2.13.2")
-            because("common module requires gson 2.13.2; WorldEdit/FAWE strict constraint overridden for compile-only use")
+            useVersion(property("deps.gson").toString())
+            because("common module requires gson ${property("deps.gson")}; WorldEdit/FAWE strict constraint overridden for compile-only use")
         }
     }
 }
 
 dependencies {
     // Transitive dependencies of the common module (Paper bundles gson/slf4j at runtime).
-    implementation("com.google.code.gson:gson:2.13.2")
-    implementation("org.slf4j:slf4j-api:2.0.17")
+    implementation("com.google.code.gson:gson:${property("deps.gson")}")
+    implementation("org.slf4j:slf4j-api:${property("deps.slf4j")}")
     compileOnly(paperApi)
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.3.9")
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit:2.15.0")
@@ -78,15 +76,13 @@ tasks.processResources {
 }
 
 tasks.withType<JavaCompile>().configureEach {
-    options.release = requiredJava.majorVersion.toInt()
+    options.release = javaVersion
     options.compilerArgs.add("-Xlint:deprecation")
 }
 
 java {
-    sourceCompatibility = requiredJava
-    targetCompatibility = requiredJava
     toolchain {
-        languageVersion = JavaLanguageVersion.of(requiredJava.majorVersion.toInt())
+        languageVersion = JavaLanguageVersion.of(javaVersion)
     }
     withSourcesJar()
 }

@@ -49,6 +49,13 @@ public final class PaperEntityProtectionListener implements Listener {
 		}
 	}
 
+	// The legacy Bukkit knockback event is deprecated for removal, but it is deliberately
+	// used here: for explosion knockback Paper passes it the explosion's direct source
+	// entity (the wind charge projectile), whereas the replacement Paper event only
+	// carries the attacker (the throwing player/Breeze) — which cannot be distinguished
+	// from e.g. a TNT igniter. Cancelling the legacy event propagates to the Paper event.
+	// Revisit if a future Paper version removes the legacy event.
+	@SuppressWarnings("removal")
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onEntityKnockback(EntityKnockbackEvent event) {
 		if (event.getCause() != EntityKnockbackEvent.KnockbackCause.EXPLOSION) {

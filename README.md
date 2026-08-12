@@ -319,6 +319,14 @@ Run tasks are per Minecraft version — swap `26.2` for `26.1.2` or `1.21.11`:
 - Fabric runtime folders use `run\fabric\`
 - Paper runtime folders use `run\paper\`
 
+### Clean local runtime folders
+
+```powershell
+.\gradlew.bat cleanRunFabric
+.\gradlew.bat cleanRunPaper
+.\gradlew.bat cleanRun
+```
+
 ## Build outputs
 
 | Output | Path |

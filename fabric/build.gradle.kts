@@ -5,8 +5,9 @@ plugins {
     id("maven-publish")
 }
 
-val requiredJava: JavaVersion =
-    if (stonecutter.current.parsed >= "26.1") JavaVersion.VERSION_25 else JavaVersion.VERSION_21
+// Per-version properties (versions/<mc>/gradle.properties) live on the root node.
+val rootNode = stonecutter.node.sibling("")!!.project
+val javaVersion = rootNode.property("java.version").toString().toInt()
 
 group = property("mod.group").toString()
 version = "${property("mod.version")}+${stonecutter.current.version}"
@@ -15,13 +16,19 @@ base {
     archivesName = "SafeZone-Fabric"
 }
 
-// Per-version properties (versions/<mc>/gradle.properties) live on the root node.
-val rootNode = stonecutter.node.sibling("")!!.project
+stonecutter {
+    // ContainerInput was named ClickType before 26.1 (same package, straight rename) —
+    // an identifier swap, so it's handled as a replacement instead of //? comment blocks.
+    replacements.string(stonecutter.current.parsed < "26.1") {
+        replace("ContainerInput", "ClickType")
+    }
+}
 
 // The shared `common` module is pure Java (no Minecraft/version-specific code), so we
 // compile its source straight into the loader jar instead of taking a project dependency
 // (loom + sibling-project deps produce a compileJava cycle). The `common` branch still
-// builds and runs its own unit tests independently.
+// builds and runs its own unit tests independently. NOTE: this source is NOT processed
+// by Stonecutter — common must stay free of //? comments and replacement targets.
 sourceSets.named("main") {
     java.srcDir(rootProject.file("common/src/main/java"))
 }
@@ -35,17 +42,18 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${rootNode.property("fabric.api.version")}")
 
     // Transitive dependencies of the common module (provided at runtime by Minecraft / the loader).
-    implementation("com.google.code.gson:gson:2.13.2")
-    implementation("org.slf4j:slf4j-api:2.0.17")
+    implementation("com.google.code.gson:gson:${property("deps.gson")}")
+    implementation("org.slf4j:slf4j-api:${property("deps.slf4j")}")
 
-    testImplementation(platform("org.junit:junit-bom:5.12.2"))
+    testImplementation(platform("org.junit:junit-bom:${property("deps.junit_bom")}"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 loom {
     runConfigs.configureEach {
-        runDir = rootProject.file("run/fabric").relativeTo(projectDir).invariantSeparatorsPath
+        // Shared between versions — only one version's server/client runs at a time.
+        runDirectory.set(rootProject.file("run/fabric"))
     }
 }
 
@@ -59,18 +67,18 @@ tasks.processResources {
         "minecraft" to rootNode.property("minecraft.dependency").toString(),
         "fabric_loader" to rootNode.property("fabric.loader.version").toString(),
         "fabric_api" to rootNode.property("fabric.api.version").toString(),
-        "java_min" to requiredJava.majorVersion,
+        "java_min" to javaVersion.toString(),
     )
     inputs.properties(expansions)
     filesMatching("fabric.mod.json") { expand(expansions) }
 
-    val mixinJava = "JAVA_${requiredJava.majorVersion}"
+    val mixinJava = "JAVA_$javaVersion"
     inputs.property("mixinJava", mixinJava)
     filesMatching("*.mixins.json") { expand("java" to mixinJava) }
 }
 
 tasks.withType<JavaCompile>().configureEach {
-    options.release = requiredJava.majorVersion.toInt()
+    options.release = javaVersion
     options.compilerArgs.add("-Xlint:deprecation")
 }
 
@@ -79,12 +87,10 @@ tasks.test {
 }
 
 java {
-    withSourcesJar()
-    sourceCompatibility = requiredJava
-    targetCompatibility = requiredJava
     toolchain {
-        languageVersion = JavaLanguageVersion.of(requiredJava.majorVersion.toInt())
+        languageVersion = JavaLanguageVersion.of(javaVersion)
     }
+    withSourcesJar()
 }
 
 tasks.jar {
