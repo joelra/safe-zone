@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/joelra/safe-zone/actions/workflows/build.yml/badge.svg)](https://github.com/joelra/safe-zone/actions/workflows/build.yml)
 [![Latest release](https://img.shields.io/github/v/release/joelra/safe-zone?style=flat-square)](https://github.com/joelra/safe-zone/releases)
-[![Minecraft](https://img.shields.io/badge/Minecraft-26.1-3C8527?style=flat-square)](https://www.minecraft.net/)
+[![Minecraft](https://img.shields.io/badge/Minecraft-26.2-3C8527?style=flat-square)](https://www.minecraft.net/)
 [![Platforms](https://img.shields.io/badge/Platforms-Fabric%20%7C%20Paper-5865F2?style=flat-square)](#compatibility)
 [![License](https://img.shields.io/github/license/joelra/safe-zone?style=flat-square)](LICENSE)
 
-Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 26.1** (26.1, 26.1.1, 26.1.2). It supports **Fabric** and **Paper**, keeps the core experience usable for **unmodded clients**, and uses a configurable **vanilla item claim wand** instead of custom client content.
+Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 26.2**. It supports **Fabric** and **Paper**, keeps the core experience usable for **unmodded clients**, and uses a configurable **vanilla item claim wand** instead of custom client content.
 
 ## Table of contents
 
@@ -36,10 +36,10 @@ Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 26.1** (26.
 
 | Item | Value |
 | --- | --- |
-| Minecraft | `26.1`, `26.1.1`, `26.1.2` |
+| Minecraft | `26.2` |
 | Java | `25+` |
 | Fabric build | Fabric Loader + Fabric API |
-| Paper build | Paper `26.1` |
+| Paper build | Paper `26.2` |
 | Optional Paper integrations | Axiom Paper Plugin, FastAsyncWorldEdit, or WorldEdit |
 | Client requirement | None for the current core feature set |
 

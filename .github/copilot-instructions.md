@@ -26,7 +26,7 @@ There is no dedicated lint or format task. CI runs `build` on Java 25. The proje
 
 ## Repository focus
 
-This repo is a **server-side** land-claim project for **Minecraft 26.1** (26.1, 26.1.1, 26.1.2) with:
+This repo is a **server-side** land-claim project for **Minecraft 26.2** with:
 
 - `common` shared code
 - `fabric` runtime
@@ -78,7 +78,7 @@ Persistence is platform-specific:
 
 ## Key conventions
 
-- For Fabric implementation questions, prefer the versioned docs for this target: `https://docs.fabricmc.net/26.1.2/develop/`
+- For Fabric implementation questions, prefer the versioned docs for this target: `https://docs.fabricmc.net/26.2/develop/`
 - Use **Mojang official mappings**, not Yarn
 - Mod ID/resource namespace: `safe-zone`
 - Java package root: `com.simpleforapanda.safezone`
