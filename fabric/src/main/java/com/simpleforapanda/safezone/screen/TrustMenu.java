@@ -13,7 +13,11 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+//? if >=26.1 {
 import net.minecraft.world.inventory.ContainerInput;
+//?} else {
+/*import net.minecraft.world.inventory.ClickType;*/
+//?}
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -82,8 +86,13 @@ public class TrustMenu extends AbstractContainerMenu {
 	}
 
 	@Override
+	//? if >=26.1 {
 	public void clicked(int slotIndex, int button, ContainerInput clickType, Player player) {
 		if (clickType != ContainerInput.PICKUP) {
+	//?} else {
+	/*public void clicked(int slotIndex, int button, ClickType clickType, Player player) {
+		if (clickType != ClickType.PICKUP) {
+	*///?}
 			return;
 		}
 
