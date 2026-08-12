@@ -4,29 +4,22 @@
 
 Use the Gradle wrapper from the repository root.
 
-- `.\gradlew.bat build`
+- `.\gradlew.bat build` — builds and tests every Minecraft version for both loaders
 - `.\gradlew.bat check`
 - `.\gradlew.bat test`
-- `.\gradlew.bat runServer`
-- `.\gradlew.bat runClient`
-- `.\gradlew.bat runDatagen`
-- `.\gradlew.bat runPaperServer`
-- `.\gradlew.bat cleanRunFabric`
-- `.\gradlew.bat cleanRunPaper`
-- `.\gradlew.bat cleanRun`
 
-Module-local tasks:
+Run tasks are per Minecraft version (Stonecutter node paths — swap `26.2` for `26.1.2` or `1.21.11`):
 
-- `.\gradlew.bat :fabric:runServer`
-- `.\gradlew.bat :fabric:runClient`
-- `.\gradlew.bat :fabric:runDatagen`
-- `.\gradlew.bat :paper:runServer`
+- `.\gradlew.bat ":fabric:26.2:runServer"`
+- `.\gradlew.bat ":fabric:26.2:runClient"`
+- `.\gradlew.bat ":fabric:26.2:runDatagen"`
+- `.\gradlew.bat ":paper:26.2:runServer"`
 
-There is no dedicated lint or format task. CI runs `build` on Java 25. The project targets Java 25.
+This is a **multi-version** project built with [Stonecutter](https://stonecutter.kikugie.dev/) 0.9 + `loom-back-compat`, targeting Minecraft `1.21.11`, `26.1.2`, and `26.2` from one source tree. Supported versions live in `settings.gradle.kts`; per-version coordinates in `versions\<mc>\gradle.properties`; version-specific source is guarded with Stonecutter `//?` comments. `26.2` is the `vcsVersion` — run `.\gradlew.bat "Set active project to 26.2"` before committing. There is no dedicated lint or format task. CI installs Java 21 and 25 and runs `build`; the toolchain picks Java 25 for 26.1+ and Java 21 for 1.21.11.
 
 ## Repository focus
 
-This repo is a **server-side** land-claim project for **Minecraft 26.2** with:
+This repo is a **server-side** land-claim project for **Minecraft 1.21.11, 26.1, and 26.2** with:
 
 - `common` shared code
 - `fabric` runtime
@@ -89,7 +82,7 @@ Persistence is platform-specific:
 - Claims are **Overworld-only**, **full-height columns**, default **64x64 max**, default **3 claims per player**
 - Key gameplay config fields: `claimWandItemId`, `starterKitEnabled`, `dropStarterKitWhenInventoryFull`, `defaultMaxClaims`, `maxClaimWidth`, `maxClaimDepth`, `claimGapEnforced`, `claimGapMinDistance`, `claimExpiryDays`, `notificationsEnabled`, `notificationRetentionDays`, `wandRemoveConfirmSeconds`, `commandRemoveConfirmSeconds`
 - Persist UUIDs as **strings**
-- Build outputs come from `fabric\build\libs\` and `paper\build\libs\`; release automation should target runtime jars unless explicitly asked otherwise
+- Build outputs come from `fabric\versions\<mc>\build\libs\` and `paper\versions\<mc>\build\libs\` (one jar per Minecraft version); release automation should target runtime jars unless explicitly asked otherwise
 - Keep install paths straight in docs: Fabric jars go in `mods\`, Paper jars go in `plugins\`
 - Follow the multi-project structure from `settings.gradle`; do not describe the repo as Fabric-only
 - Document only protections, commands, and automation that are actually implemented

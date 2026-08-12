@@ -20,11 +20,15 @@ jobs:
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
 
-      - name: Set up JDK
+      - name: Set up JDKs
+        # Java 21 for 1.21.11, Java 25 for 26.1+. Installing both lets the Gradle
+        # toolchain pick the right one per Minecraft version without downloading.
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: |
+            21
+            25
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -32,7 +36,9 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Build
+      - name: Build all versions
+        # Root `build` aggregates every Stonecutter node (common/fabric/paper x
+        # 1.21.11 / 26.1.2 / 26.2).
         run: ./gradlew build --stacktrace --no-daemon
 
       - name: Upload jars
@@ -40,9 +46,8 @@ jobs:
         with:
           name: safe-zone-build-${{ github.run_number }}
           path: |
-            fabric/build/libs/*.jar
-            !fabric/build/libs/*-dev.jar
-            !fabric/build/libs/*-sources.jar
-            paper/build/libs/*.jar
-            !paper/build/libs/*-sources.jar
+            fabric/versions/*/build/libs/*.jar
+            !fabric/versions/*/build/libs/*-sources.jar
+            paper/versions/*/build/libs/*.jar
+            !paper/versions/*/build/libs/*-sources.jar
           if-no-files-found: error

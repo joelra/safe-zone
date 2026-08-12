@@ -4,29 +4,33 @@
 
 Use the Gradle wrapper from the repo root.
 
-- `.\gradlew.bat build`
+- `.\gradlew.bat build` — builds and tests **every** Minecraft version for both loaders
 - `.\gradlew.bat check`
 - `.\gradlew.bat test`
-- `.\gradlew.bat runServer`
-- `.\gradlew.bat runClient`
-- `.\gradlew.bat runDatagen`
-- `.\gradlew.bat runPaperServer`
-- `.\gradlew.bat cleanRunFabric`
-- `.\gradlew.bat cleanRunPaper`
-- `.\gradlew.bat cleanRun`
 
-Module-local tasks also exist:
+Run tasks are per Minecraft version (Stonecutter node paths — swap `26.2` for `26.1.2` or `1.21.11`):
 
-- `.\gradlew.bat :fabric:runServer`
-- `.\gradlew.bat :fabric:runClient`
-- `.\gradlew.bat :fabric:runDatagen`
-- `.\gradlew.bat :paper:runServer`
+- `.\gradlew.bat ":fabric:26.2:runServer"`
+- `.\gradlew.bat ":fabric:26.2:runClient"`
+- `.\gradlew.bat ":fabric:26.2:runDatagen"`
+- `.\gradlew.bat ":paper:26.2:runServer"`
 
-CI runs `build` on Java 25. The project targets Java 25 via a Gradle toolchain. There is no dedicated lint or formatting task.
+CI installs Java 21 and 25 and runs `build`; the Gradle toolchain picks Java 25 for 26.1+ and Java 21 for 1.21.11. There is no dedicated lint or formatting task.
+
+## Multi-version (Stonecutter)
+
+This is a **multi-version** project built with [Stonecutter](https://stonecutter.kikugie.dev/) 0.9 + `loom-back-compat`. One source tree targets Minecraft `1.21.11`, `26.1.2`, and `26.2`.
+
+- Supported versions and the branch layout (`common`, `fabric`, `paper` branches) are declared in `settings.gradle.kts`.
+- Shared properties live in `gradle.properties`; per-version coordinates in `versions\<mc>\gradle.properties` (read from a branch via `stonecutter.node.sibling("").project.property(...)`).
+- Version-specific source is guarded with Stonecutter `//? if <predicate> { ... //?} else { ... }` comments (e.g. `ContainerInput` vs `ClickType`, `ColorCollection` vs named stained-glass fields).
+- `26.2` is the `vcsVersion`. **Run `.\gradlew.bat "Set active project to 26.2"` before committing** so the shared source is in the canonical state.
+- The `common` module is pure Java (no Minecraft imports); its source is compiled directly into the loader jars, since a sibling-project dependency triggers a loom/Stonecutter task cycle.
+- Build scripts are Kotlin DSL (`*.build.gradle.kts`); generated `*/versions/` node dirs are gitignored (the authored root `versions/` is tracked).
 
 ## Project shape
 
-Safe Zone is a **server-side** land-claim project for **Minecraft 26.2** with:
+Safe Zone is a **server-side** land-claim project for **Minecraft 1.21.11, 26.1, and 26.2** with:
 
 - `common` for shared models, persistence helpers, and shared services
 - `fabric` for the Fabric mod runtime
@@ -81,7 +85,7 @@ Fabric now has runtime/service composition similar to Paper. Prefer injected ser
 - Persist UUIDs as **strings**
 - Fabric data/config lives under `<world>\safe-zone\`
 - Paper config lives in `plugins\SafeZone\config.json`, runtime JSON in `plugins\SafeZone\data\`, and logs in `plugins\SafeZone\logs\`
-- Build from the repo root; runtime jars come from `fabric\build\libs\` and `paper\build\libs\`
+- Build from the repo root; runtime jars come from `fabric\versions\<mc>\build\libs\` and `paper\versions\<mc>\build\libs\`
 - Keep install paths straight in docs: Fabric uses `mods\`, Paper uses `plugins\`
-- Follow the multi-project layout from `settings.gradle`; do not describe this as a Fabric-only project
+- Follow the multi-version branch layout from `settings.gradle.kts`; do not describe this as a Fabric-only or single-version project
 - Do not document protections or automation that are not implemented

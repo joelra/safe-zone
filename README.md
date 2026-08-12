@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/joelra/safe-zone/actions/workflows/build.yml/badge.svg)](https://github.com/joelra/safe-zone/actions/workflows/build.yml)
 [![Latest release](https://img.shields.io/github/v/release/joelra/safe-zone?style=flat-square)](https://github.com/joelra/safe-zone/releases)
-[![Minecraft](https://img.shields.io/badge/Minecraft-26.2-3C8527?style=flat-square)](https://www.minecraft.net/)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11%20%7C%2026.1%20%7C%2026.2-3C8527?style=flat-square)](https://www.minecraft.net/)
 [![Platforms](https://img.shields.io/badge/Platforms-Fabric%20%7C%20Paper-5865F2?style=flat-square)](#compatibility)
 [![License](https://img.shields.io/github/license/joelra/safe-zone?style=flat-square)](LICENSE)
 
-Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 26.2**. It supports **Fabric** and **Paper**, keeps the core experience usable for **unmodded clients**, and uses a configurable **vanilla item claim wand** instead of custom client content.
+Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 26.2, 26.1, and 1.21.11**. It supports **Fabric** and **Paper**, keeps the core experience usable for **unmodded clients**, and uses a configurable **vanilla item claim wand** instead of custom client content.
 
 ## Table of contents
 
@@ -36,10 +36,10 @@ Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 26.2**. It 
 
 | Item | Value |
 | --- | --- |
-| Minecraft | `26.2` |
+| Minecraft | `1.21.11`, `26.1`–`26.1.2`, `26.2` |
 | Java | `25+` |
 | Fabric build | Fabric Loader + Fabric API |
-| Paper build | Paper `26.2` |
+| Paper build | Paper `1.21.11`, `26.1`, `26.2` |
 | Optional Paper integrations | Axiom Paper Plugin, FastAsyncWorldEdit, or WorldEdit |
 | Client requirement | None for the current core feature set |
 
@@ -295,44 +295,35 @@ Run these from the repository root on Windows:
 .\gradlew.bat test
 ```
 
-### Run locally
+`build` compiles and tests every supported Minecraft version (`1.21.11`, `26.1.2`, `26.2`) for both loaders.
+
+### Multi-version builds
+
+Version handling uses [Stonecutter](https://stonecutter.kikugie.dev/). Supported versions are declared in `settings.gradle.kts`; per-version dependency coordinates live in `versions\<mc>\gradle.properties`. Source that differs between versions is guarded with Stonecutter `//?` comments. `26.2` is the default (`vcsVersion`) — always reset to it before committing so the shared source stays in a consistent state:
 
 ```powershell
-.\gradlew.bat runServer
-.\gradlew.bat runClient
-.\gradlew.bat runDatagen
-.\gradlew.bat runPaperServer
+.\gradlew.bat "Set active project to 26.2"
+```
+
+### Run locally
+
+Run tasks are per Minecraft version — swap `26.2` for `26.1.2` or `1.21.11`:
+
+```powershell
+.\gradlew.bat ":fabric:26.2:runServer"
+.\gradlew.bat ":fabric:26.2:runClient"
+.\gradlew.bat ":fabric:26.2:runDatagen"
+.\gradlew.bat ":paper:26.2:runServer"
 ```
 
 - Fabric runtime folders use `run\fabric\`
 - Paper runtime folders use `run\paper\`
 
-Module tasks are also available:
-
-```powershell
-.\gradlew.bat :fabric:runServer
-.\gradlew.bat :fabric:runClient
-.\gradlew.bat :fabric:runDatagen
-.\gradlew.bat :paper:runServer
-```
-
-### Clean local runtime folders
-
-```powershell
-.\gradlew.bat cleanRunFabric
-.\gradlew.bat cleanRunPaper
-.\gradlew.bat cleanRun
-```
-
-- `cleanRunFabric` deletes `run\fabric\`
-- `cleanRunPaper` deletes `run\paper\`
-- `cleanRun` deletes both
-
 ## Build outputs
 
 | Output | Path |
 | --- | --- |
-| Fabric runtime jar | `fabric\build\libs\safe-zone-<version>.jar` |
-| Paper runtime jar | `paper\build\libs\safe-zone-paper-<version>.jar` |
+| Fabric runtime jars | `fabric\versions\<mc>\build\libs\SafeZone-Fabric-<version>+<mc>.jar` |
+| Paper runtime jars | `paper\versions\<mc>\build\libs\SafeZone-Paper-<version>+<mc>.jar` |
 
-CI and release automation publish the runtime Fabric and Paper jars by default.
+CI builds all versions and uploads the runtime Fabric and Paper jars for each.
