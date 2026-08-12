@@ -8,12 +8,12 @@ Use the Gradle wrapper from the repo root.
 - `.\gradlew.bat check`
 - `.\gradlew.bat test`
 
-Run tasks are per Minecraft version (Stonecutter node paths — swap `26.2` for `26.1.2` or `1.21.11`):
+Run tasks — `runActive*` aliases target the active version; node paths address a specific one (swap `26.2` for `26.1.2` or `1.21.11`):
 
-- `.\gradlew.bat ":fabric:26.2:runServer"`
-- `.\gradlew.bat ":fabric:26.2:runClient"`
-- `.\gradlew.bat ":fabric:26.2:runDatagen"`
-- `.\gradlew.bat ":paper:26.2:runServer"`
+- `.\gradlew.bat runActiveFabricServer` (or `":fabric:26.2:runServer"`)
+- `.\gradlew.bat runActiveFabricClient` (or `":fabric:26.2:runClient"`)
+- `.\gradlew.bat runActiveFabricDatagen` (or `":fabric:26.2:runDatagen"`)
+- `.\gradlew.bat runActivePaperServer` (or `":paper:26.2:runServer"`)
 
 Runtime-directory cleanup:
 
@@ -31,7 +31,7 @@ This is a **multi-version** project built with [Stonecutter](https://stonecutter
 - Shared properties live in `gradle.properties`; per-version coordinates in `versions\<mc>\gradle.properties` (read from a branch via `stonecutter.node.sibling("").project.property(...)`).
 - Version-specific source uses two mechanisms: straight identifier renames are `replacements.string(...)` in the branch build script (e.g. `ContainerInput` ↔ `ClickType` in `fabric/build.gradle.kts`); structural differences are `//? if <predicate> { ... //?} else { ... }` comment blocks (e.g. `ColorCollection` vs named stained-glass fields).
 - The `common` module is compiled raw into the loader jars, bypassing Stonecutter processing — **never** put `//?` comments or replacement-target identifiers in `common` source.
-- `26.2` is the `vcsVersion`. **Run `.\gradlew.bat "Set active project to 26.2"` before committing** so the shared source is in the canonical state.
+- `26.2` is the `vcsVersion`. **Run `.\gradlew.bat "Reset active project"` before committing** so the shared source is in the canonical state — CI enforces this (resets, then fails on any diff).
 - The `common` module is pure Java (no Minecraft imports); its source is compiled directly into the loader jars, since a sibling-project dependency triggers a loom/Stonecutter task cycle.
 - Build scripts are Kotlin DSL (`*.build.gradle.kts`); generated `*/versions/` node dirs are gitignored (the authored root `versions/` is tracked).
 

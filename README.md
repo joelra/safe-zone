@@ -302,19 +302,28 @@ Run these from the repository root on Windows:
 Version handling uses [Stonecutter](https://stonecutter.kikugie.dev/). Supported versions are declared in `settings.gradle.kts`; per-version dependency coordinates live in `versions\<mc>\gradle.properties`. Source that differs between versions is guarded with Stonecutter `//?` comments. `26.2` is the default (`vcsVersion`) — always reset to it before committing so the shared source stays in a consistent state:
 
 ```powershell
-.\gradlew.bat "Set active project to 26.2"
+.\gradlew.bat "Reset active project"
 ```
 
 ### Run locally
 
-Run tasks are per Minecraft version — swap `26.2` for `26.1.2` or `1.21.11`:
+The `runActive*` tasks target whichever Minecraft version is currently active:
+
+```powershell
+.\gradlew.bat runActiveFabricServer
+.\gradlew.bat runActiveFabricClient
+.\gradlew.bat runActiveFabricDatagen
+.\gradlew.bat runActivePaperServer
+```
+
+You can also address a version node directly — swap `26.2` for `26.1.2` or `1.21.11`:
 
 ```powershell
 .\gradlew.bat ":fabric:26.2:runServer"
-.\gradlew.bat ":fabric:26.2:runClient"
-.\gradlew.bat ":fabric:26.2:runDatagen"
 .\gradlew.bat ":paper:26.2:runServer"
 ```
+
+IntelliJ users: `.\gradlew.bat stonecutterIdea` generates run configurations for switching versions from the IDE.
 
 - Fabric runtime folders use `run\fabric\`
 - Paper runtime folders use `run\paper\`

@@ -8,6 +8,27 @@ plugins {
 // Switch the working tree with `./gradlew "Set active project to <version>"`.
 stonecutter active "26.2" /* [SC] DO NOT EDIT */
 
+// Convenience run tasks that dispatch to whichever version is currently active,
+// so you don't have to spell out node paths like :fabric:26.2:runServer.
+for (node in stonecutter.tree.nodes) {
+    if (node.metadata != stonecutter.current) continue
+    when (node.branch.id) {
+        "fabric" -> mapOf(
+            "runActiveFabricServer" to "runServer",
+            "runActiveFabricClient" to "runClient",
+            "runActiveFabricDatagen" to "runDatagen",
+        )
+        "paper" -> mapOf("runActivePaperServer" to "runServer")
+        else -> emptyMap()
+    }.forEach { (alias, target) ->
+        node.project.tasks.register(alias) {
+            group = node.branch.id
+            description = "Runs $target for the active version (${node.metadata.version})"
+            dependsOn(target)
+        }
+    }
+}
+
 tasks.register<Delete>("cleanRunFabric") {
     group = "build"
     description = "Delete the Fabric runtime directory"
