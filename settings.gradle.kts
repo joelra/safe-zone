@@ -37,8 +37,8 @@ stonecutter {
     centralScript = "build.gradle.kts"
 
     create(rootProject) {
-        // Supported Minecraft versions. Add "26.1" and "1.21.11" in later phases.
-        versions("26.2")
+        // Supported Minecraft versions. "1.21.11" is added in a later phase.
+        versions("26.1.2", "26.2")
         vcsVersion = "26.2"
 
         branch("common")
