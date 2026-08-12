@@ -59,6 +59,14 @@ loom {
 
 fabricApi {
     configureDataGeneration()
+    // In-game tests (vanilla GameTest framework). Run on demand per version with
+    // `:fabric:<mc>:runGameTest`; deliberately NOT attached to `build`/CI — see below.
+    configureTests {
+        createSourceSet = true
+        modId = "safe-zone-test"
+        enableGameTests = true
+        eula = true
+    }
 }
 
 tasks.processResources {
@@ -84,6 +92,12 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+// Keep in-game tests on-demand (they boot a whole server): run them explicitly with
+// `:fabric:<mc>:runGameTest` instead of as part of every `build`/`check`.
+tasks.named("check") {
+    setDependsOn(dependsOn.filterNot { it.toString().contains("runGameTest", ignoreCase = true) })
 }
 
 java {

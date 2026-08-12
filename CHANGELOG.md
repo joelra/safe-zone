@@ -14,6 +14,7 @@ Multi-version release for **Minecraft 1.21.11, 26.1, and 26.2** on Fabric and Pa
 
 - Build restructured around [Stonecutter](https://stonecutter.kikugie.dev/) so all supported Minecraft versions build from a single source tree
 - Runtime jars moved to `fabric\versions\<mc>\build\libs\` and `paper\versions\<mc>\build\libs\`
+- Automated in-game test suite (GameTest framework) covering the claim protection matrix, explosion protection, and wind-charge knockback regressions — run per version with `:fabric:<mc>:runGameTest`
 
 ## 1.4.0
 

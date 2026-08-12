@@ -21,6 +21,13 @@ Runtime-directory cleanup:
 - `.\gradlew.bat cleanRunPaper`
 - `.\gradlew.bat cleanRun`
 
+In-game tests (GameTest framework; on-demand only, not part of `build`/CI):
+
+- `.\gradlew.bat ":fabric:26.2:runGameTest"` (swap the version to test 26.1.2 / 1.21.11)
+- Test sources: `fabric\src\gametest\`; register new test classes in `fabric\src\gametest\resources\fabric.mod.json` under the `fabric-gametest` entrypoint — unregistered classes are silently not discovered
+- The suite includes controls (e.g. wilderness TNT) that prove the rig works; keep that pattern when adding tests
+- Gametest sources are Stonecutter-processed — use `//?` guards for per-version API (e.g. `EntityTypes` vs `EntityType`)
+
 CI installs Java 21 and 25 and runs `build`; the Gradle toolchain picks Java 25 for 26.1+ and Java 21 for 1.21.11. There is no dedicated lint or formatting task.
 
 ## Multi-version (Stonecutter)

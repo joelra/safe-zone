@@ -325,6 +325,18 @@ You can also address a version node directly — swap `26.2` for `26.1.2` or `1.
 
 IntelliJ users: `.\gradlew.bat stonecutterIdea` generates run configurations for switching versions from the IDE.
 
+### In-game tests
+
+Automated in-game tests (vanilla GameTest framework) validate claim protection end-to-end — including regression tests for wind-charge knockback (#5, #6). They boot a real headless server, run the suite, and report pass/fail. They are **on-demand only** (not part of `build` or CI):
+
+```powershell
+.\gradlew.bat ":fabric:26.2:runGameTest"
+```
+
+Swap `26.2` for `26.1.2` or `1.21.11` to test another version. To watch tests execute in a live world, launch the dev client (`runActiveFabricClient`), create a test world, and use the vanilla `/test` commands — the `safe-zone-test` mod with all registered tests is loaded in dev runs.
+
+Test sources live in `fabric\src\gametest\`; new test classes must be registered in `fabric\src\gametest\resources\fabric.mod.json` under the `fabric-gametest` entrypoint.
+
 - Fabric runtime folders use `run\fabric\`
 - Paper runtime folders use `run\paper\`
 
