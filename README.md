@@ -157,6 +157,7 @@ If `region-restrictions` is left as `false` (the FAWE default), FAWE skips all m
 | --- | --- |
 | `/claim` | Show help |
 | `/claim help` | Show command help |
+| `/claim status` | Show your claim count and limit |
 | `/claim list [page]` | List claims you own |
 | `/claim trusted [page]` | List claims where you are trusted |
 | `/claim here` | Show the claim at your position |
@@ -177,16 +178,19 @@ If `region-restrictions` is left as `false` (the FAWE default), FAWE skips all m
 | --- | --- |
 | `/sz` | Show help |
 | `/sz help` | Show command help |
+| `/sz status` | Show Safe Zone status summary |
 | `/sz list [page]` | List loaded claims |
 | `/sz list owner <player> [page]` | List claims owned by one player |
 | `/sz list trusted <player> [page]` | List claims that trust one player |
 | `/sz info [claimId]` | Show claim details |
-| `/sz here` | Show the claim at your position |
+| `/sz here` | Show the claim at your position (**Paper only**; on Fabric use `/sz info`) |
 | `/sz remove <claimId>` | Remove one claim |
 | `/sz removeall <player> confirm` | Remove every claim owned by a player |
 | `/sz transfer <claimId> <player>` | Transfer ownership |
 | `/sz trust <claimId> <player>` | Grant build access |
 | `/sz untrust <claimId> <player>` | Remove build access |
+| `/sz tp <claimId>` | Teleport to a claim |
+| `/sz notifications [purge [confirm]]` | Review or purge queued offline admin notices |
 | `/sz inspect [claimId]` | Inspect claims in-world or by ID |
 | `/sz reload` | Reload config and data |
 | `/sz givewand [player]` | Give a claim wand |
