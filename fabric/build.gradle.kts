@@ -72,8 +72,10 @@ loom {
         }
     }
 
-    runConfigs.configureEach {
-        // Shared between versions — only one version's server/client runs at a time.
+    // Interactive runs share one directory across versions (only one runs at a time).
+    // Deliberately NOT applied to gameTest/clientGameTest: their deleteGameTestRunDir
+    // step wipes their run directory, which must never be the shared interactive one.
+    runConfigs.matching { it.name in setOf("client", "server", "testServer") }.configureEach {
         runDirectory.set(rootProject.file("run/fabric"))
     }
 
