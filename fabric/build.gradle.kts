@@ -50,13 +50,6 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-loom {
-    runConfigs.configureEach {
-        // Shared between versions — only one version's server/client runs at a time.
-        runDirectory.set(rootProject.file("run/fabric"))
-    }
-}
-
 fabricApi {
     configureDataGeneration()
     // In-game tests (vanilla GameTest framework). Run on demand per version with
@@ -66,6 +59,34 @@ fabricApi {
         modId = "safe-zone-test"
         enableGameTests = true
         eula = true
+    }
+}
+
+loom {
+    mods {
+        // Explicit dev-mod registration: without this, runClient/runServer load
+        // no mod at all. (configureTests above already registers `safe-zone-test`,
+        // which also makes the suite available to vanilla `/test` in dev runs.)
+        create("safe-zone") {
+            sourceSet(sourceSets.main.get())
+        }
+    }
+
+    runConfigs.configureEach {
+        // Shared between versions — only one version's server/client runs at a time.
+        runDirectory.set(rootProject.file("run/fabric"))
+    }
+
+    runs {
+        // Interactive dedicated server WITH the safe-zone-test mod loaded, for
+        // watching tests execute live via vanilla `/test` commands. (Plain runServer
+        // omits the test mod; runGameTest is headless and exits after the suite.
+        // Singleplayer can never see the tests — the mod is environment:server.)
+        create("testServer") {
+            server()
+            configName = "Test Server (interactive /test)"
+            source(sourceSets["gametest"])
+        }
     }
 }
 

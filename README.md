@@ -333,7 +333,9 @@ Automated in-game tests (vanilla GameTest framework) validate claim protection e
 .\gradlew.bat ":fabric:26.2:runGameTest"
 ```
 
-Swap `26.2` for `26.1.2` or `1.21.11` to test another version. To watch tests execute in a live world, launch the dev client (`runActiveFabricClient`), create a test world, and use the vanilla `/test` commands — the `safe-zone-test` mod with all registered tests is loaded in dev runs.
+Swap `26.2` for `26.1.2` or `1.21.11` to test another version.
+
+To watch tests execute in a live world: Safe Zone is a **server-side** mod (`environment: server`), so the tests only exist on a dedicated server — singleplayer will not see them. Start the dev server (`.\gradlew.bat runActiveFabricServer`), connect a client (the dev client via `runActiveFabricClient`, or any vanilla client) to `localhost`, `op` yourself in the server console, and use the vanilla `/test` commands, e.g. `/test run safe-zone-test:` + Tab.
 
 Test sources live in `fabric\src\gametest\`; new test classes must be registered in `fabric\src\gametest\resources\fabric.mod.json` under the `fabric-gametest` entrypoint.
 
