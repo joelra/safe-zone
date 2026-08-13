@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/joelra/safe-zone/actions/workflows/build.yml/badge.svg)](https://github.com/joelra/safe-zone/actions/workflows/build.yml)
 [![Latest release](https://img.shields.io/github/v/release/joelra/safe-zone?style=flat-square)](https://github.com/joelra/safe-zone/releases)
-[![Minecraft](https://img.shields.io/badge/Minecraft-26.2-3C8527?style=flat-square)](https://www.minecraft.net/)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11%20%7C%2026.1%20%7C%2026.2-3C8527?style=flat-square)](https://www.minecraft.net/)
 [![Platforms](https://img.shields.io/badge/Platforms-Fabric%20%7C%20Paper-5865F2?style=flat-square)](#compatibility)
 [![License](https://img.shields.io/github/license/joelra/safe-zone?style=flat-square)](LICENSE)
 
-Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 26.2**. It supports **Fabric** and **Paper**, keeps the core experience usable for **unmodded clients**, and uses a configurable **vanilla item claim wand** instead of custom client content.
+Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 26.2, 26.1, and 1.21.11**. It supports **Fabric** and **Paper**, keeps the core experience usable for **unmodded clients**, and uses a configurable **vanilla item claim wand** instead of custom client content.
 
 ## Table of contents
 
@@ -36,10 +36,10 @@ Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 26.2**. It 
 
 | Item | Value |
 | --- | --- |
-| Minecraft | `26.2` |
+| Minecraft | `1.21.11`, `26.1`–`26.1.2`, `26.2` |
 | Java | `25+` |
 | Fabric build | Fabric Loader + Fabric API |
-| Paper build | Paper `26.2` |
+| Paper build | Paper `1.21.11`, `26.1`, `26.2` |
 | Optional Paper integrations | Axiom Paper Plugin, FastAsyncWorldEdit, or WorldEdit |
 | Client requirement | None for the current core feature set |
 
@@ -229,6 +229,7 @@ If `region-restrictions` is left as `false` (the FAWE default), FAWE skips all m
 | `claimGapMinDistance` | `10` | Integer `>= 0` | Minimum spacing between claims when gap enforcement is enabled |
 | `claimExpiryDays` | `0` | Integer `>= 0` | Inactivity expiry window in days; `0` disables expiry |
 | `notificationsEnabled` | `true` | `true` or `false` | Whether offline admin notifications are queued and delivered |
+| `windChargeKnockbackInClaims` | `true` | `true` or `false` | Whether wind-charge knockback still applies to players standing inside claims. Set `false` to suppress it inside claims (any player, regardless of trust); the wilderness is never affected |
 | `notificationRetentionDays` | `30` | Integer `>= 1` | How long queued offline notices are kept before pruning |
 | `wandRemoveConfirmSeconds` | `5` | Integer `>= 1` | Confirmation window for wand-based claim removal |
 | `commandRemoveConfirmSeconds` | `10` | Integer `>= 1` | Confirmation window for `/claim remove` |
@@ -295,26 +296,55 @@ Run these from the repository root on Windows:
 .\gradlew.bat test
 ```
 
-### Run locally
+`build` compiles and tests every supported Minecraft version (`1.21.11`, `26.1.2`, `26.2`) for both loaders.
+
+### Multi-version builds
+
+Version handling uses [Stonecutter](https://stonecutter.kikugie.dev/). Supported versions are declared in `settings.gradle.kts`; per-version dependency coordinates live in `versions\<mc>\gradle.properties`. Source that differs between versions is guarded with Stonecutter `//?` comments. `26.2` is the default (`vcsVersion`) — always reset to it before committing so the shared source stays in a consistent state:
 
 ```powershell
-.\gradlew.bat runServer
-.\gradlew.bat runClient
-.\gradlew.bat runDatagen
-.\gradlew.bat runPaperServer
+.\gradlew.bat "Reset active project"
 ```
+
+### Run locally
+
+The `runActive*` tasks target whichever Minecraft version is currently active:
+
+```powershell
+.\gradlew.bat runActiveFabricServer
+.\gradlew.bat runActiveFabricClient
+.\gradlew.bat runActiveFabricDatagen
+.\gradlew.bat runActivePaperServer
+```
+
+You can also address a version node directly — swap `26.2` for `26.1.2` or `1.21.11`:
+
+```powershell
+.\gradlew.bat ":fabric:26.2:runServer"
+.\gradlew.bat ":paper:26.2:runServer"
+```
+
+IntelliJ users: `.\gradlew.bat stonecutterIdea` generates run configurations for switching versions from the IDE.
+
+### In-game tests
+
+Automated in-game tests (vanilla GameTest framework) validate claim protection end-to-end — including regression tests for wind-charge knockback (#5, #6). They boot a real headless server, run the suite, and report pass/fail. They are **on-demand only** (not part of `build` or CI):
+
+```powershell
+.\gradlew.bat ":fabric:26.2:runGameTest"
+```
+
+Swap `26.2` for `26.1.2` or `1.21.11` to test another version.
+
+To watch tests execute in a live world: Safe Zone is a **server-side** mod (`environment: server`), so the tests only exist on a dedicated server — singleplayer will not see them. Start the interactive test server (`.\gradlew.bat ":fabric:26.2:runTestServer"`), connect a client (the dev client via `runActiveFabricClient`, or any client) to `localhost`, `op` yourself in the server console, and use the vanilla `/test` commands. The test mod adds two conveniences:
+
+- `/test runall` — run the whole Safe Zone suite (shorthand for `/test run safe-zone-test:*`)
+- `/test clearmockplayers` — remove leftover `test-mock-player` entities (vanilla's `/test clearall` skips player entities; passing tests clean up their own mock players, failed ones leave them for debugging)
+
+Test sources live in `fabric\src\gametest\`; new test classes must be registered in `fabric\src\gametest\resources\fabric.mod.json` under the `fabric-gametest` entrypoint.
 
 - Fabric runtime folders use `run\fabric\`
 - Paper runtime folders use `run\paper\`
-
-Module tasks are also available:
-
-```powershell
-.\gradlew.bat :fabric:runServer
-.\gradlew.bat :fabric:runClient
-.\gradlew.bat :fabric:runDatagen
-.\gradlew.bat :paper:runServer
-```
 
 ### Clean local runtime folders
 
@@ -324,15 +354,11 @@ Module tasks are also available:
 .\gradlew.bat cleanRun
 ```
 
-- `cleanRunFabric` deletes `run\fabric\`
-- `cleanRunPaper` deletes `run\paper\`
-- `cleanRun` deletes both
-
 ## Build outputs
 
 | Output | Path |
 | --- | --- |
-| Fabric runtime jar | `fabric\build\libs\safe-zone-<version>.jar` |
-| Paper runtime jar | `paper\build\libs\safe-zone-paper-<version>.jar` |
+| Fabric runtime jars | `fabric\versions\<mc>\build\libs\SafeZone-Fabric-<version>+<mc>.jar` |
+| Paper runtime jars | `paper\versions\<mc>\build\libs\SafeZone-Paper-<version>+<mc>.jar` |
 
-CI and release automation publish the runtime Fabric and Paper jars by default.
+CI builds all versions and uploads the runtime Fabric and Paper jars for each.

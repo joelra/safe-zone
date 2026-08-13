@@ -32,6 +32,13 @@ public class GameplayConfig {
 	public int wandSelectionRangeBlocks = DEFAULT_WAND_SELECTION_RANGE_BLOCKS;
 	public int wandOutlineStep = DEFAULT_WAND_OUTLINE_STEP;
 	public int wandConfirmDisplaySeconds = DEFAULT_WAND_CONFIRM_DISPLAY_SECONDS;
+	/**
+	 * Whether wind-charge knockback still applies to players standing inside claims.
+	 * Defaults to true (wind charges are a movement mechanic, not griefing). Server
+	 * admins can set this to false to suppress wind-charge knockback for any player
+	 * located inside a claim; the wilderness is never affected.
+	 */
+	public boolean windChargeKnockbackInClaims = true;
 
 	public void ensureDefaults() {
 		if (this.claimWandItemId == null || this.claimWandItemId.isBlank()) {
@@ -126,6 +133,7 @@ public class GameplayConfig {
 		copy.wandSelectionRangeBlocks = this.wandSelectionRangeBlocks;
 		copy.wandOutlineStep = this.wandOutlineStep;
 		copy.wandConfirmDisplaySeconds = this.wandConfirmDisplaySeconds;
+		copy.windChargeKnockbackInClaims = this.windChargeKnockbackInClaims;
 		return copy;
 	}
 }

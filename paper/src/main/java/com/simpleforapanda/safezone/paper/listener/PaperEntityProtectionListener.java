@@ -5,8 +5,8 @@ import com.simpleforapanda.safezone.data.PermissionResult;
 import com.simpleforapanda.safezone.paper.runtime.PaperClaimStore;
 import com.simpleforapanda.safezone.paper.runtime.PaperRuntime;
 import com.simpleforapanda.safezone.protection.RideableEntityClassifier;
-import io.papermc.paper.event.entity.EntityKnockbackEvent;
 import org.bukkit.Location;
+import org.bukkit.entity.AbstractWindCharge;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
@@ -18,6 +18,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityKnockbackByEntityEvent;
+import org.bukkit.event.entity.EntityKnockbackEvent;
 import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -47,9 +49,30 @@ public final class PaperEntityProtectionListener implements Listener {
 		}
 	}
 
+	// The legacy Bukkit knockback event is deprecated for removal, but it is deliberately
+	// used here: for explosion knockback Paper passes it the explosion's direct source
+	// entity (the wind charge projectile), whereas the replacement Paper event only
+	// carries the attacker (the throwing player/Breeze) — which cannot be distinguished
+	// from e.g. a TNT igniter. Cancelling the legacy event propagates to the Paper event.
+	// Revisit if a future Paper version removes the legacy event.
+	@SuppressWarnings("removal")
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onEntityKnockback(EntityKnockbackEvent event) {
-		if (event.getCause() != EntityKnockbackEvent.Cause.EXPLOSION) {
+		if (event.getCause() != EntityKnockbackEvent.KnockbackCause.EXPLOSION) {
+			return;
+		}
+
+		// Wind charges (and Breeze wind bursts) are a movement mechanic, not block
+		// griefing — by default their knockback is never suppressed (issues #5 and #6).
+		// Admins can set windChargeKnockbackInClaims=false to suppress it for any
+		// player standing inside a claim; the wilderness is never affected.
+		if (event instanceof EntityKnockbackByEntityEvent byEntity
+			&& byEntity.getSourceEntity() instanceof AbstractWindCharge) {
+			if (!this.runtime.services().configService().current().gameplay.windChargeKnockbackInClaims
+				&& event.getEntity() instanceof Player player
+				&& claimStore().getClaimAt(player.getLocation()).isPresent()) {
+				event.setCancelled(true);
+			}
 			return;
 		}
 

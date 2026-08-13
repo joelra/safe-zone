@@ -33,6 +33,12 @@ bin/
 run/
 logs/
 
+# stonecutter (generated per-branch version nodes; keep the authored root versions/ props)
+
+versions/
+!/versions
+.stonecutter/
+
 # qodana / static analysis outputs
 
 .qodana/

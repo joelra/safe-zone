@@ -1,0 +1,23 @@
+{
+	"schemaVersion": 1,
+	"id": "safe-zone-test",
+	"version": "1.0.0",
+	"name": "Safe Zone Game Tests",
+	"description": "In-game tests for Safe Zone claim protection. Never shipped in release jars.",
+	"license": "MIT",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.simpleforapanda.safezone.gametest.SafeZoneTestCommands"
+		],
+		"fabric-gametest": [
+			"com.simpleforapanda.safezone.gametest.SmokeGameTest",
+			"com.simpleforapanda.safezone.gametest.ClaimProtectionGameTest",
+			"com.simpleforapanda.safezone.gametest.ExplosionProtectionGameTest",
+			"com.simpleforapanda.safezone.gametest.WindChargeGameTest"
+		]
+	},
+	"depends": {
+		"safe-zone": "*"
+	}
+}

@@ -40,6 +40,21 @@ public final class ClaimEntityProtection {
 			&& (entity instanceof BlockAttachedEntity || entity instanceof VehicleEntity || entity instanceof ArmorStand);
 	}
 
+	/**
+	 * Wind charges are a movement mechanic and by default keep their knockback
+	 * everywhere. If a server admin sets {@code windChargeKnockbackInClaims=false},
+	 * wind-charge knockback is suppressed for any player standing inside a claim
+	 * (regardless of trust); the wilderness is never affected.
+	 */
+	public static boolean shouldBlockWindChargeMovement(Entity entity) {
+		ClaimManager claimManager = ClaimManager.getInstance();
+		if (!claimManager.isLoaded() || claimManager.getGameplayConfig().windChargeKnockbackInClaims) {
+			return false;
+		}
+
+		return entity instanceof ServerPlayer && isProtectedByClaim(entity);
+	}
+
 	private static BlockPos getProtectionPos(Entity entity) {
 		if (entity instanceof BlockAttachedEntity attachedEntity) {
 			return attachedEntity.getPos();
@@ -59,6 +74,15 @@ public final class ClaimEntityProtection {
 			return false;
 		}
 
-		return claimManager.canBuild(player, player.blockPosition()) != PermissionResult.DENIED;
+		BlockPos pos = player.blockPosition();
+		// Only protect players who are actually standing inside a claim. In unclaimed
+		// wilderness canBuild() returns OWNER (not DENIED), which previously suppressed
+		// explosion knockback everywhere outside claims — breaking wind-charge movement
+		// in the open and in claims the player has access to (issues #5 and #6).
+		if (claimManager.getClaimAt(pos).isEmpty()) {
+			return false;
+		}
+
+		return claimManager.canBuild(player, pos) != PermissionResult.DENIED;
 	}
 }
