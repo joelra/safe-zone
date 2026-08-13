@@ -47,9 +47,11 @@ qodana.sarif.json
 qodana-short.sarif.json
 
 # local AI / agent tooling state
+# (.claude/skills is tracked — shared, repo-specific agent skills)
 
 .copilot/
-.claude/
+.claude/*
+!.claude/skills/
 .cursor/
 .continue/
 .roo/

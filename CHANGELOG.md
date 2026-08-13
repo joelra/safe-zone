@@ -1,21 +1,21 @@
 # Changelog
 
-## 1.5.0 (unreleased)
+## 1.5.0 — 2026-08-12
 
-Multi-version release for **Minecraft 1.21.11, 26.1, and 26.2** on Fabric and Paper.
+Minecraft 26.2 support — and one download for every server we support: this release ships a jar per Minecraft version for both Fabric and Paper.
 
-### Highlights
+### What's new
 
-- Support for **Minecraft 26.2** on both loaders
-- One release now ships a jar per supported Minecraft version (`1.21.11`, `26.1.2`, `26.2`) — pick the jar matching your server, e.g. `SafeZone-Fabric-1.5.0+26.2.jar`
-- Wind charges and Breeze wind bursts knock players back again: knockback was wrongly suppressed in unclaimed wilderness and in claims the player owns or is trusted in (#5, #6). TNT/creeper knockback protection inside claims is unchanged.
-- New config option `windChargeKnockbackInClaims` (default `true`): admins can set it to `false` to suppress wind-charge knockback for players standing inside claims; the wilderness is never affected.
+- **Minecraft 26.2 support** on Fabric and Paper
+- **Pick the jar that matches your server**: each release now includes builds for Minecraft `1.21.11`, `26.1.x`, and `26.2` — e.g. a Paper server on 26.2 wants `SafeZone-Paper-1.5.0+26.2.jar`
+- **Wind charges work again** (#5, #6): wind-charge and Breeze wind-burst knockback was wrongly blocked in the wilderness and inside claims you own or are trusted in. Wind charges now launch players everywhere, while TNT and creeper protection inside claims is unchanged.
+- **New config option `windChargeKnockbackInClaims`** (default `true`): set it to `false` if you want wind-charge knockback suppressed for players standing inside claims — the wilderness is never affected. Apply with `/sz reload`.
 
-### Internals
+### Compatibility notes
 
-- Build restructured around [Stonecutter](https://stonecutter.kikugie.dev/) so all supported Minecraft versions build from a single source tree
-- Runtime jars moved to `fabric\versions\<mc>\build\libs\` and `paper\versions\<mc>\build\libs\`
-- Automated in-game test suite (GameTest framework) covering the claim protection matrix, explosion protection, and wind-charge knockback regressions — run per version with `:fabric:<mc>:runGameTest`
+- The `1.21.11` jars run on Java 21+; the `26.1.x` and `26.2` jars require Java 25
+- Existing configs, claims, and data work unchanged — the new config key is optional
+- FastAsyncWorldEdit integration stays dormant until FAWE ships a 26.2 build; WorldEdit and Axiom integrations are unaffected
 
 ## 1.4.0
 
