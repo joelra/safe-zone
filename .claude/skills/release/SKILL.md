@@ -41,6 +41,11 @@ players**, not contributors. Rules:
 
 Show the rewritten entry to the user and get approval before committing.
 
+Also sweep `README.md` for staleness against this release: supported-version
+badge and compatibility table (including per-jar Java requirements), install
+instructions (jar naming/selection), and anything describing behavior that
+changed this cycle.
+
 ## 3. Commit and verify
 
 - Commit the changelog (and any version bump) to `main` as `release: vX.Y.Z`.

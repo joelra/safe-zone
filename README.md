@@ -37,7 +37,7 @@ Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 26.2, 26.1,
 | Item | Value |
 | --- | --- |
 | Minecraft | `1.21.11`, `26.1`–`26.1.2`, `26.2` |
-| Java | `25+` |
+| Java | `21+` for the `1.21.11` jars, `25+` for the `26.1`/`26.2` jars |
 | Fabric build | Fabric Loader + Fabric API |
 | Paper build | Paper `1.21.11`, `26.1`, `26.2` |
 | Optional Paper integrations | Axiom Paper Plugin, FastAsyncWorldEdit, or WorldEdit |
@@ -45,19 +45,19 @@ Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 26.2, 26.1,
 
 ## Install
 
-Choose the build that matches your server software.
+Choose the build that matches your server software **and** your Minecraft version — each release ships one jar per supported version, marked by the `+<version>` suffix (e.g. `SafeZone-Paper-1.5.0+26.2.jar` for a Paper server on Minecraft 26.2; the `+26.1.2` jars cover all of 26.1.x).
 
 ### Fabric
 
 1. Install Fabric Loader on the server.
-2. Put the Safe Zone **Fabric jar** in `mods\`.
+2. Put the Safe Zone **Fabric jar** matching your Minecraft version in `mods\`.
 3. Put **Fabric API** in `mods\`.
 4. Start the server once to generate Safe Zone files under `<world>\safe-zone\`.
 
 ### Paper
 
 1. Install a compatible Paper server.
-2. Put the Safe Zone **Paper jar** in `plugins\`.
+2. Put the Safe Zone **Paper jar** matching your Minecraft version in `plugins\`.
 3. Optional: install **AxiomPaperPlugin** and/or **FastAsyncWorldEdit** or **WorldEdit** if you want claim-restricted editor support on Paper.
 4. Start the server once to generate `plugins\SafeZone\`.
 
@@ -343,7 +343,7 @@ To watch tests execute in a live world: Safe Zone is a **server-side** mod (`env
 
 Test sources live in `fabric\src\gametest\`; new test classes must be registered in `fabric\src\gametest\resources\fabric.mod.json` under the `fabric-gametest` entrypoint.
 
-- Fabric runtime folders use `run\fabric\`
+- The Fabric dev client uses `run\fabric\`; Fabric dev servers use `run\fabric\server-<mc>\` per version (worlds are not backward-compatible), auto-seeded with `online-mode=false` and an accepted EULA
 - Paper runtime folders use `run\paper\`
 
 ### Clean local runtime folders
