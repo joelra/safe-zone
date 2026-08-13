@@ -32,7 +32,7 @@ public final class WindChargeGameTest {
 		detonateWindCharge(helper);
 
 		assertKnockedBack(player, "in the wilderness");
-		helper.succeed();
+		SafeZoneGameTestSupport.succeed(helper);
 	}
 
 	@GameTest
@@ -44,7 +44,7 @@ public final class WindChargeGameTest {
 		detonateWindCharge(helper);
 
 		assertKnockedBack(owner, "inside their own claim");
-		helper.succeed();
+		SafeZoneGameTestSupport.succeed(helper);
 	}
 
 	/**

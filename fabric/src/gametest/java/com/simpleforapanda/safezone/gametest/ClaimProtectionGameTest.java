@@ -26,7 +26,7 @@ public final class ClaimProtectionGameTest {
 		owner.gameMode.destroyBlock(helper.absolutePos(TARGET));
 
 		helper.assertBlockNotPresent(Blocks.STONE, TARGET);
-		helper.succeed();
+		SafeZoneGameTestSupport.succeed(helper);
 	}
 
 	@GameTest
@@ -39,7 +39,7 @@ public final class ClaimProtectionGameTest {
 		intruder.gameMode.destroyBlock(helper.absolutePos(TARGET));
 
 		helper.assertBlockPresent(Blocks.STONE, TARGET);
-		helper.succeed();
+		SafeZoneGameTestSupport.succeed(helper);
 	}
 
 	@GameTest
@@ -53,7 +53,7 @@ public final class ClaimProtectionGameTest {
 		friend.gameMode.destroyBlock(helper.absolutePos(TARGET));
 
 		helper.assertBlockNotPresent(Blocks.STONE, TARGET);
-		helper.succeed();
+		SafeZoneGameTestSupport.succeed(helper);
 	}
 
 	@GameTest
@@ -65,6 +65,6 @@ public final class ClaimProtectionGameTest {
 		player.gameMode.destroyBlock(helper.absolutePos(TARGET));
 
 		helper.assertBlockNotPresent(Blocks.STONE, TARGET);
-		helper.succeed();
+		SafeZoneGameTestSupport.succeed(helper);
 	}
 }

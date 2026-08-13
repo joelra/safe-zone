@@ -7,6 +7,9 @@
 	"license": "MIT",
 	"environment": "*",
 	"entrypoints": {
+		"main": [
+			"com.simpleforapanda.safezone.gametest.SafeZoneTestCommands"
+		],
 		"fabric-gametest": [
 			"com.simpleforapanda.safezone.gametest.SmokeGameTest",
 			"com.simpleforapanda.safezone.gametest.ClaimProtectionGameTest",

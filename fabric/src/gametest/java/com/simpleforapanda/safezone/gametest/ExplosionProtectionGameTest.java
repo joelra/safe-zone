@@ -28,7 +28,7 @@ public final class ExplosionProtectionGameTest {
 		helper.getLevel().explode(null, blast.x, blast.y, blast.z, 4.0F, Level.ExplosionInteraction.TNT);
 
 		helper.assertBlockPresent(Blocks.STONE, TARGET);
-		helper.succeed();
+		SafeZoneGameTestSupport.succeed(helper);
 	}
 
 	@GameTest
@@ -40,7 +40,7 @@ public final class ExplosionProtectionGameTest {
 		helper.getLevel().explode(null, blast.x, blast.y, blast.z, 4.0F, Level.ExplosionInteraction.TNT);
 
 		helper.assertBlockNotPresent(Blocks.STONE, TARGET);
-		helper.succeed();
+		SafeZoneGameTestSupport.succeed(helper);
 	}
 
 	@GameTest
@@ -56,7 +56,7 @@ public final class ExplosionProtectionGameTest {
 				"Explosion knockback should be suppressed for the owner inside their claim, but velocity was "
 					+ owner.getDeltaMovement());
 		}
-		helper.succeed();
+		SafeZoneGameTestSupport.succeed(helper);
 	}
 
 	@GameTest
@@ -71,6 +71,6 @@ public final class ExplosionProtectionGameTest {
 			throw new IllegalStateException("Expected explosion knockback in the wilderness, but velocity stayed "
 				+ player.getDeltaMovement());
 		}
-		helper.succeed();
+		SafeZoneGameTestSupport.succeed(helper);
 	}
 }

@@ -8,6 +8,11 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
+
 /**
  * Shared helpers for Safe Zone in-game tests.
  *
@@ -20,6 +25,14 @@ final class SafeZoneGameTestSupport {
 	private static final BlockPos CLAIM_CORNER_A = new BlockPos(1, 1, 1);
 	private static final BlockPos CLAIM_CORNER_B = new BlockPos(6, 1, 6);
 
+	/**
+	 * Mock players spawned per test, removed again in {@link #succeed}. Vanilla's test
+	 * cleanup (and {@code /test clearall}) intentionally skips player entities, so
+	 * without this they would accumulate on interactive test servers. Failed tests
+	 * still leave theirs behind — `/test clearmockplayers` sweeps those up.
+	 */
+	private static final Map<GameTestHelper, List<ServerPlayer>> MOCK_PLAYERS = new WeakHashMap<>();
+
 	private SafeZoneGameTestSupport() {
 	}
 
@@ -29,7 +42,19 @@ final class SafeZoneGameTestSupport {
 		Vec3 pos = helper.absoluteVec(relativePos);
 		player.setPos(pos.x, pos.y, pos.z);
 		player.setDeltaMovement(Vec3.ZERO);
+		MOCK_PLAYERS.computeIfAbsent(helper, ignored -> new ArrayList<>()).add(player);
 		return player;
+	}
+
+	/** Removes this test's mock players, then marks the test as passed. */
+	static void succeed(GameTestHelper helper) {
+		List<ServerPlayer> players = MOCK_PLAYERS.remove(helper);
+		if (players != null) {
+			for (ServerPlayer player : players) {
+				helper.getLevel().getServer().getPlayerList().remove(player);
+			}
+		}
+		helper.succeed();
 	}
 
 	/** Creates a claim owned by {@code owner} covering the interior of the test structure. */

@@ -24,7 +24,8 @@ Runtime-directory cleanup:
 In-game tests (GameTest framework; on-demand only, not part of `build`/CI):
 
 - `.\gradlew.bat ":fabric:26.2:runGameTest"` (swap the version to test 26.1.2 / 1.21.11)
-- Watching tests live requires a **dedicated** dev server + connected client (`/test` as an opped player); the mod is `environment: server`, so tests never exist in singleplayer
+- Watching tests live requires the **dedicated** test server (`":fabric:26.2:runTestServer"`) + connected client (`/test` as an opped player); the mod is `environment: server`, so tests never exist in singleplayer
+- The test mod grafts `/test runall` and `/test clearmockplayers` onto vanilla's `/test` (see `SafeZoneTestCommands`); passing tests remove their own mock players via `SafeZoneGameTestSupport.succeed(helper)` — always end tests with that, not `helper.succeed()`
 - Test sources: `fabric\src\gametest\`; register new test classes in `fabric\src\gametest\resources\fabric.mod.json` under the `fabric-gametest` entrypoint — unregistered classes are silently not discovered
 - The suite includes controls (e.g. wilderness TNT) that prove the rig works; keep that pattern when adding tests
 - Gametest sources are Stonecutter-processed — use `//?` guards for per-version API (e.g. `EntityTypes` vs `EntityType`)
