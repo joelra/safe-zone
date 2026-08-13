@@ -66,7 +66,43 @@ git push origin vX.Y.Z
   (3 Fabric + 3 Paper, one per Minecraft version), tag marked Latest.
 - Link the release to the user.
 
-## 6. Post-release
+## 6. Modrinth publication
+
+The user uploads to Modrinth manually (until mod-publish-plugin automation
+lands). Prepare everything for them:
+
+**Project description**: if the README or shipped behavior changed this cycle,
+update `docs/MODRINTH.md` (the tracked copy of the Modrinth project body,
+condensed from README.md — verify command tables against the actual command
+registrars, not just the README) and hand it over for pasting.
+
+**Version entries** — one per jar, six total. Provide a metadata table:
+
+| Jar | Loader | Game versions | Version number |
+| --- | --- | --- | --- |
+| `SafeZone-Fabric-X.Y.Z+<mc>.jar` | Fabric | exactly `<mc>` (mixins pin the patch version; `+26.1.2` covers 26.1–26.1.2) | `X.Y.Z+<mc>` |
+| `SafeZone-Paper-X.Y.Z+<mc>.jar` | Paper | the whole line the jar's `api-version` + compile surface supports (e.g. `+1.21.11` → all of 1.21.x — verified by compiling against the line's oldest paper-api) | `X.Y.Z+<mc>` |
+
+All channel **Release**, environment **server-only**; Fabric entries declare
+**Fabric API** as a required dependency. Jars come from the GitHub release
+assets, never a local build.
+
+**Per-jar changelogs** — derive from the CHANGELOG entry; do NOT paste it
+verbatim. Rules:
+
+- Keep only lines relevant to that jar's Minecraft version (a "Minecraft 26.2
+  support" bullet belongs only on the 26.2 jars).
+- Strip issue references like `(#5, #6)` — they don't link on Modrinth and
+  mean nothing to its audience.
+- State only that jar's Java requirement.
+- Mind the framing: a jar for a newly supported Minecraft version is a
+  "first Safe Zone release for <mc>"; a jar for a line that skipped releases
+  summarizes everything "since <last version shipped for that line>" (check
+  the release history — e.g. 1.21.11 skipped 1.4.0).
+
+Show the per-jar changelogs to the user before they upload.
+
+## 7. Post-release
 
 - Closed issues referenced in the notes get a comment only if the fix needs
   user action (e.g. new config); otherwise the auto-close from the PR suffices.
