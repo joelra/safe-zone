@@ -64,7 +64,7 @@ public abstract class ServerExplosionMixin {
 		)
 	)
 	private void safezone$blockClaimExplosionMovement(Entity entity, Vec3 pushVector) {
-		if (!safezone$isWindChargeExplosion() && ClaimEntityProtection.shouldBlockExplosionMovement(entity)) {
+		if (safezone$shouldBlockMovement(entity)) {
 			return;
 		}
 
@@ -85,7 +85,7 @@ public abstract class ServerExplosionMixin {
 		if (!(pushVector instanceof Vec3 knockbackVector)) {
 			throw new IllegalStateException("Expected Vec3 in explosion knockback redirect but got " + pushVector);
 		}
-		if (!safezone$isWindChargeExplosion() && ClaimEntityProtection.shouldBlockExplosionMovement(targetPlayer)) {
+		if (safezone$shouldBlockMovement(targetPlayer)) {
 			return null;
 		}
 
@@ -93,8 +93,16 @@ public abstract class ServerExplosionMixin {
 	}
 
 	// Wind charges (and Breeze wind bursts) are a movement mechanic, not block griefing —
-	// their knockback must never be suppressed inside claims (issues #5 and #6). They are
+	// by default their knockback is never suppressed (issues #5 and #6); admins can opt
+	// into suppressing it inside claims via windChargeKnockbackInClaims=false. They are
 	// distinguished from TNT/creeper explosions by their damage type / source projectile.
+	@Unique
+	private boolean safezone$shouldBlockMovement(Entity entity) {
+		return safezone$isWindChargeExplosion()
+			? ClaimEntityProtection.shouldBlockWindChargeMovement(entity)
+			: ClaimEntityProtection.shouldBlockExplosionMovement(entity);
+	}
+
 	@Unique
 	private boolean safezone$isWindChargeExplosion() {
 		ServerExplosion self = (ServerExplosion) (Object) this;

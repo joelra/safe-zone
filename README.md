@@ -229,6 +229,7 @@ If `region-restrictions` is left as `false` (the FAWE default), FAWE skips all m
 | `claimGapMinDistance` | `10` | Integer `>= 0` | Minimum spacing between claims when gap enforcement is enabled |
 | `claimExpiryDays` | `0` | Integer `>= 0` | Inactivity expiry window in days; `0` disables expiry |
 | `notificationsEnabled` | `true` | `true` or `false` | Whether offline admin notifications are queued and delivered |
+| `windChargeKnockbackInClaims` | `true` | `true` or `false` | Whether wind-charge knockback still applies to players standing inside claims. Set `false` to suppress it inside claims (any player, regardless of trust); the wilderness is never affected |
 | `notificationRetentionDays` | `30` | Integer `>= 1` | How long queued offline notices are kept before pruning |
 | `wandRemoveConfirmSeconds` | `5` | Integer `>= 1` | Confirmation window for wand-based claim removal |
 | `commandRemoveConfirmSeconds` | `10` | Integer `>= 1` | Confirmation window for `/claim remove` |

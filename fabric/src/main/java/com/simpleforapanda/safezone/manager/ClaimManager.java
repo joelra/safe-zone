@@ -104,6 +104,11 @@ public final class ClaimManager {
 		return requireService().getGameplayConfig();
 	}
 
+	/** Replaces the live gameplay config without reloading persisted claim state. */
+	public synchronized void updateGameplayConfig(GameplayConfig config) {
+		requireService().updateGameplayConfig(config);
+	}
+
 	public synchronized long getClaimExpiryMillis() {
 		return requireService().getClaimExpiryMillis();
 	}

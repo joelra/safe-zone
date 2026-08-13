@@ -9,6 +9,7 @@ Multi-version release for **Minecraft 1.21.11, 26.1, and 26.2** on Fabric and Pa
 - Support for **Minecraft 26.2** on both loaders
 - One release now ships a jar per supported Minecraft version (`1.21.11`, `26.1.2`, `26.2`) — pick the jar matching your server, e.g. `SafeZone-Fabric-1.5.0+26.2.jar`
 - Wind charges and Breeze wind bursts knock players back again: knockback was wrongly suppressed in unclaimed wilderness and in claims the player owns or is trusted in (#5, #6). TNT/creeper knockback protection inside claims is unchanged.
+- New config option `windChargeKnockbackInClaims` (default `true`): admins can set it to `false` to suppress wind-charge knockback for players standing inside claims; the wilderness is never affected.
 
 ### Internals
 

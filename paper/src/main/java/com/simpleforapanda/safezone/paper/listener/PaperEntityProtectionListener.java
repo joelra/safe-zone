@@ -63,9 +63,16 @@ public final class PaperEntityProtectionListener implements Listener {
 		}
 
 		// Wind charges (and Breeze wind bursts) are a movement mechanic, not block
-		// griefing — never suppress their knockback (issues #5 and #6).
+		// griefing — by default their knockback is never suppressed (issues #5 and #6).
+		// Admins can set windChargeKnockbackInClaims=false to suppress it for any
+		// player standing inside a claim; the wilderness is never affected.
 		if (event instanceof EntityKnockbackByEntityEvent byEntity
 			&& byEntity.getSourceEntity() instanceof AbstractWindCharge) {
+			if (!this.runtime.services().configService().current().gameplay.windChargeKnockbackInClaims
+				&& event.getEntity() instanceof Player player
+				&& claimStore().getClaimAt(player.getLocation()).isPresent()) {
+				event.setCancelled(true);
+			}
 			return;
 		}
 

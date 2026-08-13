@@ -47,6 +47,34 @@ public final class WindChargeGameTest {
 		SafeZoneGameTestSupport.succeed(helper);
 	}
 
+	@GameTest
+	public void windChargeSuppressedInClaimWhenConfigDisabled(GameTestHelper helper) {
+		// Admin opt-out: windChargeKnockbackInClaims=false suppresses wind-charge
+		// knockback for players standing inside a claim.
+		ServerPlayer owner = SafeZoneGameTestSupport.playerAt(helper, PLAYER_POS);
+		SafeZoneGameTestSupport.claimAround(helper, owner);
+
+		SafeZoneGameTestSupport.withWindChargeKnockbackInClaims(false, () -> detonateWindCharge(helper));
+
+		if (owner.getDeltaMovement().lengthSqr() > 1.0E-4) {
+			throw new IllegalStateException(
+				"windChargeKnockbackInClaims=false should suppress wind-charge knockback inside a claim, but velocity was "
+					+ owner.getDeltaMovement());
+		}
+		SafeZoneGameTestSupport.succeed(helper);
+	}
+
+	@GameTest
+	public void windChargeStillWorksInWildernessWhenConfigDisabled(GameTestHelper helper) {
+		// The opt-out only affects claims — wilderness knockback must survive it.
+		ServerPlayer player = SafeZoneGameTestSupport.playerAt(helper, PLAYER_POS);
+
+		SafeZoneGameTestSupport.withWindChargeKnockbackInClaims(false, () -> detonateWindCharge(helper));
+
+		assertKnockedBack(player, "in the wilderness with windChargeKnockbackInClaims=false");
+		SafeZoneGameTestSupport.succeed(helper);
+	}
+
 	/**
 	 * Spawns a real wind charge and detonates it as the explosion source, so the
 	 * explosion is attributed to an AbstractWindCharge exactly like a thrown one.

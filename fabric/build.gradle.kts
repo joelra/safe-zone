@@ -50,6 +50,29 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+// Dev servers must be offline-mode so the unauthenticated dev client can join.
+// Seed server.properties on first boot of a fresh per-version server directory;
+// the server then loads it and fills in the remaining defaults. (configureEach:
+// the loom run tasks are registered later in this script.)
+tasks.configureEach {
+    if (name == "runServer" || name == "runTestServer") {
+        doFirst {
+            val serverDir = rootProject.file("run/fabric/server-${stonecutter.current.version}")
+            serverDir.mkdirs()
+            val properties = serverDir.resolve("server.properties")
+            if (!properties.exists()) {
+                properties.writeText("online-mode=false\n")
+            }
+            val eula = serverDir.resolve("eula.txt")
+            // Same consent as configureTests { eula = true } above, for dev servers.
+            // Also replaces the eula=false stub a first boot writes before exiting.
+            if (!eula.exists() || eula.readText().contains("eula=false")) {
+                eula.writeText("eula=true\n")
+            }
+        }
+    }
+}
+
 fabricApi {
     configureDataGeneration()
     // In-game tests (vanilla GameTest framework). Run on demand per version with
@@ -72,11 +95,17 @@ loom {
         }
     }
 
-    // Interactive runs share one directory across versions (only one runs at a time).
-    // Deliberately NOT applied to gameTest/clientGameTest: their deleteGameTestRunDir
-    // step wipes their run directory, which must never be the shared interactive one.
-    runConfigs.matching { it.name in setOf("client", "server", "testServer") }.configureEach {
+    // The client is stateless for multiplayer, so all versions share one directory
+    // (options.txt etc.). Servers get a directory PER VERSION: worlds are not
+    // backward-compatible, so booting an older server against a newer version's
+    // world fails with "No key dimensions in MapLike". Deliberately NOT applied to
+    // gameTest/clientGameTest: their deleteGameTestRunDir step wipes their run
+    // directory, which must never be an interactive one.
+    runConfigs.matching { it.name == "client" }.configureEach {
         runDirectory.set(rootProject.file("run/fabric"))
+    }
+    runConfigs.matching { it.name in setOf("server", "testServer") }.configureEach {
+        runDirectory.set(rootProject.file("run/fabric/server-${stonecutter.current.version}"))
     }
 
     runs {

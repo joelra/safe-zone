@@ -242,6 +242,14 @@ public final class CommonClaimService {
 		return this.gameplayConfig.copy();
 	}
 
+	/**
+	 * Replaces the live gameplay config without touching persisted claim state
+	 * (unlike {@link #load}, which re-reads everything from disk).
+	 */
+	public synchronized void updateGameplayConfig(GameplayConfig gameplayConfig) {
+		this.gameplayConfig = Objects.requireNonNull(gameplayConfig, "gameplayConfig").copy();
+	}
+
 	public synchronized long getClaimExpiryMillis() {
 		return this.gameplayConfig.claimExpiryMillis();
 	}

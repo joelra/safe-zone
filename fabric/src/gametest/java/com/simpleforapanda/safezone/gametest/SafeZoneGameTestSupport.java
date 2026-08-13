@@ -74,4 +74,18 @@ final class SafeZoneGameTestSupport {
 			throw new IllegalStateException("Failed to trust player in test claim " + claim.claimId);
 		}
 	}
+
+	/** Runs {@code action} with the windChargeKnockbackInClaims config temporarily set. */
+	static void withWindChargeKnockbackInClaims(boolean value, Runnable action) {
+		ClaimManager manager = ClaimManager.getInstance();
+		var original = manager.getGameplayConfig();
+		var modified = original.copy();
+		modified.windChargeKnockbackInClaims = value;
+		manager.updateGameplayConfig(modified);
+		try {
+			action.run();
+		} finally {
+			manager.updateGameplayConfig(original);
+		}
+	}
 }
