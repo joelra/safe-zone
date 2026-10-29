@@ -7,13 +7,13 @@
 
 ----
 
-![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11%20%7C%2026.1%20%7C%2026.2-3C8527)
+![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11%20%7C%2026.1%20%7C%2026.2%20%7C%2026.3-3C8527)
 ![Mod Loader](https://img.shields.io/badge/Mod%20Loader-Fabric%20|%20Paper-blue.svg)
 ![Environment](https://img.shields.io/badge/Environment-Server%20Only-4051b5)
 ![Java](https://img.shields.io/badge/Java-21%2B%20(1.21.11)%20%2F%2025%20(26.x)-e76f00)
 ![License MIT](https://img.shields.io/badge/License-MIT-lightgrey)
 
-Safe Zone is a **server-only** Fabric and Paper land-claim mod for **Minecraft 1.21.11, 26.1, and 26.2**. Players protect builds with a configurable vanilla claim wand (**Golden Hoe** by default), admins manage claims with `/sz`, and **unmodded clients can still join and use the full workflow**.
+Safe Zone is a **server-only** Fabric and Paper land-claim mod for **Minecraft 1.21.11, 26.1, 26.2, and 26.3**. Players protect builds with a configurable vanilla claim wand (**Golden Hoe** by default), admins manage claims with `/sz`, and **unmodded clients can still join and use the full workflow**.
 
 ## Highlights
 
@@ -31,6 +31,7 @@ Each release ships **one jar per Minecraft version** — pick the file matching 
 
 | Your server | Jar | Java |
 | --- | --- | --- |
+| Minecraft 26.3 | `...+26.3.jar` | 25 |
 | Minecraft 26.2 | `...+26.2.jar` | 25 |
 | Minecraft 26.1 / 26.1.1 / 26.1.2 | `...+26.1.2.jar` | 25 |
 | Minecraft 1.21.11 | `...+1.21.11.jar` | 21+ |

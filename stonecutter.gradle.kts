@@ -4,12 +4,12 @@ plugins {
 
 // The Minecraft version authored against / active by default.
 // `./gradlew build` builds every version+branch; build a single node with
-// e.g. `./gradlew ":fabric:26.2:build"` or `./gradlew ":paper:26.2:build"`.
+// e.g. `./gradlew ":fabric:26.3:build"` or `./gradlew ":paper:26.3:build"`.
 // Switch the working tree with `./gradlew "Set active project to <version>"`.
-stonecutter active "26.2" /* [SC] DO NOT EDIT */
+stonecutter active "26.3" /* [SC] DO NOT EDIT */
 
 // Convenience run tasks that dispatch to whichever version is currently active,
-// so you don't have to spell out node paths like :fabric:26.2:runServer.
+// so you don't have to spell out node paths like :fabric:26.3:runServer.
 for (node in stonecutter.tree.nodes) {
     if (node.metadata != stonecutter.current) continue
     when (node.branch.id) {

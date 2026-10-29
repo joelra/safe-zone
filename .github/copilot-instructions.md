@@ -8,18 +8,18 @@ Use the Gradle wrapper from the repository root.
 - `.\gradlew.bat check`
 - `.\gradlew.bat test`
 
-Run tasks are per Minecraft version (Stonecutter node paths — swap `26.2` for `26.1.2` or `1.21.11`):
+Run tasks are per Minecraft version (Stonecutter node paths — swap `26.3` for `26.2`, `26.1.2`, or `1.21.11`):
 
-- `.\gradlew.bat ":fabric:26.2:runServer"`
-- `.\gradlew.bat ":fabric:26.2:runClient"`
-- `.\gradlew.bat ":fabric:26.2:runDatagen"`
-- `.\gradlew.bat ":paper:26.2:runServer"`
+- `.\gradlew.bat ":fabric:26.3:runServer"`
+- `.\gradlew.bat ":fabric:26.3:runClient"`
+- `.\gradlew.bat ":fabric:26.3:runDatagen"`
+- `.\gradlew.bat ":paper:26.3:runServer"`
 
-This is a **multi-version** project built with [Stonecutter](https://stonecutter.kikugie.dev/) 0.9 + `loom-back-compat`, targeting Minecraft `1.21.11`, `26.1.2`, and `26.2` from one source tree. Supported versions live in `settings.gradle.kts`; per-version coordinates in `versions\<mc>\gradle.properties`; version-specific source is guarded with Stonecutter `//?` comments. `26.2` is the `vcsVersion` — run `.\gradlew.bat "Set active project to 26.2"` before committing. There is no dedicated lint or format task. CI installs Java 21 and 25 and runs `build`; the toolchain picks Java 25 for 26.1+ and Java 21 for 1.21.11.
+This is a **multi-version** project built with [Stonecutter](https://stonecutter.kikugie.dev/) 0.9 + `loom-back-compat`, targeting Minecraft `1.21.11`, `26.1.2`, `26.2`, and `26.3` from one source tree. Supported versions live in `settings.gradle.kts`; per-version coordinates in `versions\<mc>\gradle.properties`; version-specific source is guarded with Stonecutter `//?` comments. `26.3` is the `vcsVersion` — run `.\gradlew.bat "Set active project to 26.3"` before committing. There is no dedicated lint or format task. CI installs Java 21 and 25 and runs `build`; the toolchain picks Java 25 for 26.1+ and Java 21 for 1.21.11.
 
 ## Repository focus
 
-This repo is a **server-side** land-claim project for **Minecraft 1.21.11, 26.1, and 26.2** with:
+This repo is a **server-side** land-claim project for **Minecraft 1.21.11, 26.1, 26.2, and 26.3** with:
 
 - `common` shared code
 - `fabric` runtime
@@ -71,7 +71,7 @@ Persistence is platform-specific:
 
 ## Key conventions
 
-- For Fabric implementation questions, prefer the versioned docs for this target: `https://docs.fabricmc.net/26.2/develop/`
+- For Fabric implementation questions, prefer the versioned docs for this target: `https://docs.fabricmc.net/26.3/develop/`
 - Use **Mojang official mappings**, not Yarn
 - Mod ID/resource namespace: `safe-zone`
 - Java package root: `com.simpleforapanda.safezone`

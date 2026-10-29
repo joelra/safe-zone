@@ -408,7 +408,11 @@ public final class AdminCommand {
 			: context.getSource().getPlayerOrException();
 		ItemStack claimWand = claimWandHandler.createClaimWandStack();
 		if (!player.getInventory().add(claimWand)) {
-			player.drop(claimWand, false);
+			//? if >=26.3 {
+			player.drop(claimWand, false, net.minecraft.util.Prediction.SERVER_ONLY);
+			//?} else {
+			/*player.drop(claimWand, false);
+			*///?}
 		}
 		context.getSource().sendSuccess(() -> CommandTextHelper.statusLine("WAND", ChatFormatting.GOLD,
 			SafeZoneText.adminGiveWandSuccess(claimWandHandler.wandName(), player.getName().getString())), false);
