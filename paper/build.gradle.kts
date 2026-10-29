@@ -60,7 +60,7 @@ dependencies {
     implementation("org.slf4j:slf4j-api:${property("deps.slf4j")}")
     compileOnly(paperApi)
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.3.9")
-    compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit:2.15.0")
+    compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit:2.16.1")
     // axiomStubs only needs Paper API — avoid pulling in WorldEdit's strict
     // fastutil version constraint which conflicts with Paper's requirement.
     "axiomStubsCompileOnly"(paperApi)
@@ -93,7 +93,9 @@ tasks.named<RunServer>("runServer") {
     downloadPlugins {
         // Axiom Paper Plugin (per-version Modrinth build).
         modrinth("axiom-paper-plugin", rootNode.property("axiom.version_id").toString())
-        // FastAsyncWorldEdit — not auto-downloaded; Modrinth builds exist for 26.1.1+ (project fastasyncworldedit).
+        // FastAsyncWorldEdit 2.16.1 (one jar covers 1.21.x through 26.3). Claim restrictions also
+        // need region-restrictions: true in plugins/FastAsyncWorldEdit/config.yml.
+        modrinth("fastasyncworldedit", "A1gBu4MM")
         // LuckPerms — for testing per-player permission scenarios (e.g. safezone.axiom without safezone.command.admin).
         modrinth("luckperms", "OrIs0S6b")
     }
