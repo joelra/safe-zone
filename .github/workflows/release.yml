@@ -65,7 +65,8 @@ jobs:
           mkdir dist
           find fabric/versions paper/versions -path "*/build/libs/*.jar" ! -name "*-sources.jar" -exec cp {} dist/ \;
           ls -la dist/
-          test "$(ls dist/*.jar | wc -l)" -eq 6
+          # One Fabric + one Paper jar per Minecraft version (1.21.11, 26.1.2, 26.2, 26.3).
+          test "$(ls dist/*.jar | wc -l)" -eq 8
 
       - name: Create GitHub release
         env:

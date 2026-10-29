@@ -7,7 +7,7 @@ description: Cut a Safe Zone release - finalize the CHANGELOG in end-user voice,
 
 Releases are driven by tags: pushing `vX.Y.Z` triggers `.github/workflows/release.yml`,
 which builds every Minecraft version in clean CI, extracts that version's CHANGELOG
-section as the release notes, and publishes a GitHub release with all six runtime jars
+section as the release notes, and publishes a GitHub release with all eight runtime jars
 (`SafeZone-{Fabric,Paper}-X.Y.Z+{mc}.jar`). Your job is everything the workflow can't
 judge: the changelog wording, preflight sanity, and the tag itself.
 
@@ -62,8 +62,8 @@ git push origin vX.Y.Z
 ## 5. Watch and verify
 
 - Watch the Release workflow run (`gh run watch`).
-- When it finishes, verify the release page: correct notes, exactly six jars
-  (3 Fabric + 3 Paper, one per Minecraft version), tag marked Latest.
+- When it finishes, verify the release page: correct notes, exactly eight jars
+  (4 Fabric + 4 Paper, one per Minecraft version), tag marked Latest.
 - Link the release to the user.
 
 ## 6. Modrinth publication
@@ -76,7 +76,7 @@ update `docs/MODRINTH.md` (the tracked copy of the Modrinth project body,
 condensed from README.md — verify command tables against the actual command
 registrars, not just the README) and hand it over for pasting.
 
-**Version entries** — one per jar, six total. Provide a metadata table:
+**Version entries** — one per jar, eight total. Provide a metadata table:
 
 | Jar | Loader | Game versions | Version number |
 | --- | --- | --- | --- |

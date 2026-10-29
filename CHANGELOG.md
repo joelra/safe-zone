@@ -1,16 +1,16 @@
 # Changelog
 
-## 1.6.0 (unreleased)
+## 1.6.0 — 2026-10-29
 
-Minecraft 26.3 support.
+Minecraft 26.3 support on Fabric and Paper.
 
 ### What's new
 
-- **Minecraft 26.3 support** on Fabric and Paper — a Paper server on 26.3 wants `SafeZone-Paper-1.6.0+26.3.jar`
+- **Minecraft 26.3 support** on Fabric and Paper — pick the `+26.3` jar, e.g. `SafeZone-Paper-1.6.0+26.3.jar` for a Paper server on 26.3
 
 ### Compatibility notes
 
-- New `26.3` jars alongside the existing `1.21.11`, `26.1.x`, and `26.2` jars
+- Jars ship for Minecraft `1.21.11`, `26.1.x`, `26.2`, and `26.3`, for both Fabric and Paper
 - The `1.21.11` jars run on Java 21+; all `26.x` jars require Java 25
 - Existing configs, claims, and data work unchanged
 
