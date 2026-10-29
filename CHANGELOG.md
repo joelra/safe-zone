@@ -13,7 +13,6 @@ Minecraft 26.3 support.
 - New `26.3` jars alongside the existing `1.21.11`, `26.1.x`, and `26.2` jars
 - The `1.21.11` jars run on Java 21+; all `26.x` jars require Java 25
 - Existing configs, claims, and data work unchanged
-- FastAsyncWorldEdit integration stays dormant until FAWE ships 26.2/26.3 builds; WorldEdit and Axiom integrations are unaffected
 
 ## 1.5.0 — 2026-08-12
 

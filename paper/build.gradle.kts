@@ -93,7 +93,7 @@ tasks.named<RunServer>("runServer") {
     downloadPlugins {
         // Axiom Paper Plugin (per-version Modrinth build).
         modrinth("axiom-paper-plugin", rootNode.property("axiom.version_id").toString())
-        // FastAsyncWorldEdit — no 26.2/26.3 build released yet; add a github(...) entry when available.
+        // FastAsyncWorldEdit — not auto-downloaded; Modrinth builds exist for 26.1.1+ (project fastasyncworldedit).
         // LuckPerms — for testing per-player permission scenarios (e.g. safezone.axiom without safezone.command.admin).
         modrinth("luckperms", "OrIs0S6b")
     }
