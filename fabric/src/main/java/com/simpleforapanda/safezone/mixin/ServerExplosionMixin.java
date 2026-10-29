@@ -56,7 +56,24 @@ public abstract class ServerExplosionMixin {
 		return entity.hurtServer(level, damageSource, damage);
 	}
 
+	// 26.3 routes explosion knockback through Entity.pushFromExplosion instead of push.
+	//? if >=26.3 {
 	@Redirect(
+		method = "hurtEntities",
+		at = @At(
+			value = "INVOKE",
+			target = "Lnet/minecraft/world/entity/Entity;pushFromExplosion(Lnet/minecraft/world/phys/Vec3;)V"
+		)
+	)
+	private void safezone$blockClaimExplosionMovement(Entity entity, Vec3 pushVector) {
+		if (safezone$shouldBlockMovement(entity)) {
+			return;
+		}
+
+		entity.pushFromExplosion(pushVector);
+	}
+	//?} else {
+	/*@Redirect(
 		method = "hurtEntities",
 		at = @At(
 			value = "INVOKE",
@@ -70,6 +87,7 @@ public abstract class ServerExplosionMixin {
 
 		entity.push(pushVector);
 	}
+	*///?}
 
 	@Redirect(
 		method = "hurtEntities",

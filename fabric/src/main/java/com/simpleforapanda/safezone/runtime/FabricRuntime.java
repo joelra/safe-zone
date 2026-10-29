@@ -91,7 +91,12 @@ public final class FabricRuntime {
 					SafeZoneText.starterKitInventoryFull(this.services.claimWandHandler().wandName()));
 				return;
 			}
-			player.drop(claimWand, false);
+			// 26.3 added a Prediction argument; server-granted items are SERVER_ONLY (as for advancement rewards).
+			//? if >=26.3 {
+			player.drop(claimWand, false, net.minecraft.util.Prediction.SERVER_ONLY);
+			//?} else {
+			/*player.drop(claimWand, false);
+			*///?}
 		}
 
 		this.services.claimManager().markStarterKitReceived(player.getUUID());

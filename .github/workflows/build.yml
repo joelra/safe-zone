@@ -38,14 +38,14 @@ jobs:
 
       - name: Verify sources were committed with the VCS version active
         # Stonecutter rewrites shared sources when switching versions; commits must
-        # be made with the vcsVersion (26.2) active. Resetting must be a no-op.
+        # be made with the vcsVersion (26.3) active. Resetting must be a no-op.
         run: |
           ./gradlew "Reset active project" --no-daemon
           git diff --exit-code
 
       - name: Build all versions
         # Root `build` aggregates every Stonecutter node (common/fabric/paper x
-        # 1.21.11 / 26.1.2 / 26.2).
+        # 1.21.11 / 26.1.2 / 26.2 / 26.3).
         run: ./gradlew build --stacktrace --no-daemon
 
       - name: Upload jars

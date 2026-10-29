@@ -8,12 +8,12 @@ Use the Gradle wrapper from the repo root.
 - `.\gradlew.bat check`
 - `.\gradlew.bat test`
 
-Run tasks — `runActive*` aliases target the active version; node paths address a specific one (swap `26.2` for `26.1.2` or `1.21.11`):
+Run tasks — `runActive*` aliases target the active version; node paths address a specific one (swap `26.3` for `26.2`, `26.1.2`, or `1.21.11`):
 
-- `.\gradlew.bat runActiveFabricServer` (or `":fabric:26.2:runServer"`)
-- `.\gradlew.bat runActiveFabricClient` (or `":fabric:26.2:runClient"`)
-- `.\gradlew.bat runActiveFabricDatagen` (or `":fabric:26.2:runDatagen"`)
-- `.\gradlew.bat runActivePaperServer` (or `":paper:26.2:runServer"`)
+- `.\gradlew.bat runActiveFabricServer` (or `":fabric:26.3:runServer"`)
+- `.\gradlew.bat runActiveFabricClient` (or `":fabric:26.3:runClient"`)
+- `.\gradlew.bat runActiveFabricDatagen` (or `":fabric:26.3:runDatagen"`)
+- `.\gradlew.bat runActivePaperServer` (or `":paper:26.3:runServer"`)
 
 Runtime-directory cleanup:
 
@@ -23,8 +23,8 @@ Runtime-directory cleanup:
 
 In-game tests (GameTest framework; on-demand only, not part of `build`/CI):
 
-- `.\gradlew.bat ":fabric:26.2:runGameTest"` (swap the version to test 26.1.2 / 1.21.11)
-- Watching tests live requires the **dedicated** test server (`":fabric:26.2:runTestServer"`) + connected client (`/test` as an opped player); the mod is `environment: server`, so tests never exist in singleplayer
+- `.\gradlew.bat ":fabric:26.3:runGameTest"` (swap the version to test 26.2 / 26.1.2 / 1.21.11)
+- Watching tests live requires the **dedicated** test server (`":fabric:26.3:runTestServer"`) + connected client (`/test` as an opped player); the mod is `environment: server`, so tests never exist in singleplayer
 - The test mod grafts `/test runall` and `/test clearmockplayers` onto vanilla's `/test` (see `SafeZoneTestCommands`); passing tests remove their own mock players via `SafeZoneGameTestSupport.succeed(helper)` — always end tests with that, not `helper.succeed()`
 - Test sources: `fabric\src\gametest\`; register new test classes in `fabric\src\gametest\resources\fabric.mod.json` under the `fabric-gametest` entrypoint — unregistered classes are silently not discovered
 - The suite includes controls (e.g. wilderness TNT) that prove the rig works; keep that pattern when adding tests
@@ -34,19 +34,19 @@ CI installs Java 21 and 25 and runs `build`; the Gradle toolchain picks Java 25 
 
 ## Multi-version (Stonecutter)
 
-This is a **multi-version** project built with [Stonecutter](https://stonecutter.kikugie.dev/) 0.9 + `loom-back-compat`. One source tree targets Minecraft `1.21.11`, `26.1.2`, and `26.2`.
+This is a **multi-version** project built with [Stonecutter](https://stonecutter.kikugie.dev/) 0.9 + `loom-back-compat`. One source tree targets Minecraft `1.21.11`, `26.1.2`, `26.2`, and `26.3`.
 
 - Supported versions and the branch layout (`common`, `fabric`, `paper` branches) are declared in `settings.gradle.kts`.
 - Shared properties live in `gradle.properties`; per-version coordinates in `versions\<mc>\gradle.properties` (read from a branch via `stonecutter.node.sibling("").project.property(...)`).
 - Version-specific source uses two mechanisms: straight identifier renames are `replacements.string(...)` in the branch build script (e.g. `ContainerInput` ↔ `ClickType` in `fabric/build.gradle.kts`); structural differences are `//? if <predicate> { ... //?} else { ... }` comment blocks (e.g. `ColorCollection` vs named stained-glass fields).
 - The `common` module is compiled raw into the loader jars, bypassing Stonecutter processing — **never** put `//?` comments or replacement-target identifiers in `common` source.
-- `26.2` is the `vcsVersion`. **Run `.\gradlew.bat "Reset active project"` before committing** so the shared source is in the canonical state — CI enforces this (resets, then fails on any diff).
+- `26.3` is the `vcsVersion`. **Run `.\gradlew.bat "Reset active project"` before committing** so the shared source is in the canonical state — CI enforces this (resets, then fails on any diff).
 - The `common` module is pure Java (no Minecraft imports); its source is compiled directly into the loader jars, since a sibling-project dependency triggers a loom/Stonecutter task cycle.
 - Build scripts are Kotlin DSL (`*.build.gradle.kts`); generated `*/versions/` node dirs are gitignored (the authored root `versions/` is tracked).
 
 ## Project shape
 
-Safe Zone is a **server-side** land-claim project for **Minecraft 1.21.11, 26.1, and 26.2** with:
+Safe Zone is a **server-side** land-claim project for **Minecraft 1.21.11, 26.1, 26.2, and 26.3** with:
 
 - `common` for shared models, persistence helpers, and shared services
 - `fabric` for the Fabric mod runtime
@@ -89,7 +89,7 @@ Fabric now has runtime/service composition similar to Paper. Prefer injected ser
 
 ## Guardrails
 
-- For Fabric questions, prefer the versioned docs for this target: `https://docs.fabricmc.net/26.2/develop/`
+- For Fabric questions, prefer the versioned docs for this target: `https://docs.fabricmc.net/26.3/develop/`
 - Use **Mojang Official Mappings**
 - Mod ID: `safe-zone`
 - Package root: `com.simpleforapanda.safezone`

@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/joelra/safe-zone/actions/workflows/build.yml/badge.svg)](https://github.com/joelra/safe-zone/actions/workflows/build.yml)
 [![Latest release](https://img.shields.io/github/v/release/joelra/safe-zone?style=flat-square)](https://github.com/joelra/safe-zone/releases)
-[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11%20%7C%2026.1%20%7C%2026.2-3C8527?style=flat-square)](https://www.minecraft.net/)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11%20%7C%2026.1%20%7C%2026.2%20%7C%2026.3-3C8527?style=flat-square)](https://www.minecraft.net/)
 [![Platforms](https://img.shields.io/badge/Platforms-Fabric%20%7C%20Paper-5865F2?style=flat-square)](#compatibility)
 [![License](https://img.shields.io/github/license/joelra/safe-zone?style=flat-square)](LICENSE)
 
-Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 26.2, 26.1, and 1.21.11**. It supports **Fabric** and **Paper**, keeps the core experience usable for **unmodded clients**, and uses a configurable **vanilla item claim wand** instead of custom client content.
+Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 26.3, 26.2, 26.1, and 1.21.11**. It supports **Fabric** and **Paper**, keeps the core experience usable for **unmodded clients**, and uses a configurable **vanilla item claim wand** instead of custom client content.
 
 ## Table of contents
 
@@ -36,16 +36,16 @@ Safe Zone is a **server-side land claim mod/plugin** for **Minecraft 26.2, 26.1,
 
 | Item | Value |
 | --- | --- |
-| Minecraft | `1.21.11`, `26.1`–`26.1.2`, `26.2` |
-| Java | `21+` for the `1.21.11` jars, `25+` for the `26.1`/`26.2` jars |
+| Minecraft | `1.21.11`, `26.1`–`26.1.2`, `26.2`, `26.3` |
+| Java | `21+` for the `1.21.11` jars, `25+` for the `26.x` jars |
 | Fabric build | Fabric Loader + Fabric API |
-| Paper build | Paper `1.21.11`, `26.1`, `26.2` |
+| Paper build | Paper `1.21.11`, `26.1`, `26.2`, `26.3` |
 | Optional Paper integrations | Axiom Paper Plugin, FastAsyncWorldEdit, or WorldEdit |
 | Client requirement | None for the current core feature set |
 
 ## Install
 
-Choose the build that matches your server software **and** your Minecraft version — each release ships one jar per supported version, marked by the `+<version>` suffix (e.g. `SafeZone-Paper-1.5.0+26.2.jar` for a Paper server on Minecraft 26.2; the `+26.1.2` jars cover all of 26.1.x).
+Choose the build that matches your server software **and** your Minecraft version — each release ships one jar per supported version, marked by the `+<version>` suffix (e.g. `SafeZone-Paper-1.6.0+26.3.jar` for a Paper server on Minecraft 26.3; the `+26.1.2` jars cover all of 26.1.x).
 
 ### Fabric
 
@@ -300,11 +300,11 @@ Run these from the repository root on Windows:
 .\gradlew.bat test
 ```
 
-`build` compiles and tests every supported Minecraft version (`1.21.11`, `26.1.2`, `26.2`) for both loaders.
+`build` compiles and tests every supported Minecraft version (`1.21.11`, `26.1.2`, `26.2`, `26.3`) for both loaders.
 
 ### Multi-version builds
 
-Version handling uses [Stonecutter](https://stonecutter.kikugie.dev/). Supported versions are declared in `settings.gradle.kts`; per-version dependency coordinates live in `versions\<mc>\gradle.properties`. Source that differs between versions is guarded with Stonecutter `//?` comments. `26.2` is the default (`vcsVersion`) — always reset to it before committing so the shared source stays in a consistent state:
+Version handling uses [Stonecutter](https://stonecutter.kikugie.dev/). Supported versions are declared in `settings.gradle.kts`; per-version dependency coordinates live in `versions\<mc>\gradle.properties`. Source that differs between versions is guarded with Stonecutter `//?` comments. `26.3` is the default (`vcsVersion`) — always reset to it before committing so the shared source stays in a consistent state:
 
 ```powershell
 .\gradlew.bat "Reset active project"
@@ -321,11 +321,11 @@ The `runActive*` tasks target whichever Minecraft version is currently active:
 .\gradlew.bat runActivePaperServer
 ```
 
-You can also address a version node directly — swap `26.2` for `26.1.2` or `1.21.11`:
+You can also address a version node directly — swap `26.3` for `26.2`, `26.1.2`, or `1.21.11`:
 
 ```powershell
-.\gradlew.bat ":fabric:26.2:runServer"
-.\gradlew.bat ":paper:26.2:runServer"
+.\gradlew.bat ":fabric:26.3:runServer"
+.\gradlew.bat ":paper:26.3:runServer"
 ```
 
 IntelliJ users: `.\gradlew.bat stonecutterIdea` generates run configurations for switching versions from the IDE.
@@ -335,12 +335,12 @@ IntelliJ users: `.\gradlew.bat stonecutterIdea` generates run configurations for
 Automated in-game tests (vanilla GameTest framework) validate claim protection end-to-end — including regression tests for wind-charge knockback (#5, #6). They boot a real headless server, run the suite, and report pass/fail. They are **on-demand only** (not part of `build` or CI):
 
 ```powershell
-.\gradlew.bat ":fabric:26.2:runGameTest"
+.\gradlew.bat ":fabric:26.3:runGameTest"
 ```
 
-Swap `26.2` for `26.1.2` or `1.21.11` to test another version.
+Swap `26.3` for `26.2`, `26.1.2`, or `1.21.11` to test another version.
 
-To watch tests execute in a live world: Safe Zone is a **server-side** mod (`environment: server`), so the tests only exist on a dedicated server — singleplayer will not see them. Start the interactive test server (`.\gradlew.bat ":fabric:26.2:runTestServer"`), connect a client (the dev client via `runActiveFabricClient`, or any client) to `localhost`, `op` yourself in the server console, and use the vanilla `/test` commands. The test mod adds two conveniences:
+To watch tests execute in a live world: Safe Zone is a **server-side** mod (`environment: server`), so the tests only exist on a dedicated server — singleplayer will not see them. Start the interactive test server (`.\gradlew.bat ":fabric:26.3:runTestServer"`), connect a client (the dev client via `runActiveFabricClient`, or any client) to `localhost`, `op` yourself in the server console, and use the vanilla `/test` commands. The test mod adds two conveniences:
 
 - `/test runall` — run the whole Safe Zone suite (shorthand for `/test run safe-zone-test:*`)
 - `/test clearmockplayers` — remove leftover `test-mock-player` entities (vanilla's `/test clearall` skips player entities; passing tests clean up their own mock players, failed ones leave them for debugging)
